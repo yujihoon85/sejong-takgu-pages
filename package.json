@@ -3,6 +3,6 @@
   "private": true,
   "scripts": {
     "deploy:cf": "wrangler pages deploy . --project-name=sejong-takgu --commit-dirty=true",
-    "deploy:cf:dist": "wrangler pages deploy dist --project-name=sejong-takgu --commit-dirty=true"
+    "deploy:cf:prod": "wrangler pages deploy . --project-name=sejong-takgu --branch=main --commit-dirty=true"
   }
 }

@@ -1,0 +1,9 @@
+# 세종시 어쩌다 운동하는 사람들 — 탁구방
+# 충청이음과 동일한 공식 지속 배포
+
+cd C:\Users\giant\Documents\sejong-takgu-pages
+git pull origin main
+npx wrangler login
+npm.cmd run deploy:cf
+
+# 성공 시 예: https://sejong-takgu.pages.dev
