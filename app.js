@@ -646,7 +646,133 @@
   }
 
 
-  function wireSisterLinks() {
+
+  // ── 탁구 연습 유튜브 (큐레이션: 조회수·유용성 기준, API 키 불필요) ──
+  var YT_PRACTICE = [
+    {
+      id: "aneBoVv5Wp0",
+      title: "김남수의 탁구레슨 #27 백핸드 드라이브",
+      ch: "김남수의 탁구토크",
+      views: "약 15.8만 회",
+      tag: "백핸드 · 레슨"
+    },
+    {
+      id: "FLHfHYtFDXo",
+      title: "정영식 코치 백핸드 드라이브 기초",
+      ch: "Jeoung youngsik 정영식",
+      views: "약 11.6만 회",
+      tag: "백핸드 · 기초"
+    },
+    {
+      id: "jwA-ee44bv4",
+      title: "백핸드드라이브 성공률·회전 올리기 (커트볼 대응)",
+      ch: "씅튜브",
+      views: "약 11.0만 회",
+      tag: "백핸드 · 커트"
+    },
+    {
+      id: "Npy9NP2FjC4",
+      title: "힘 없는 백핸드 드라이브 임팩트 레슨",
+      ch: "탁썸TV",
+      views: "약 8.4천 회",
+      tag: "백핸드 · 임팩트"
+    },
+    {
+      id: "OhOR6hIb1ds",
+      title: "중국 코치 포핸드 드라이브 — 앞으로 스윙",
+      ch: "중국 탁구 연구소",
+      views: "포핸드 연습",
+      tag: "포핸드 · 드라이브"
+    }
+  ];
+
+  function wireYouTubePractice() {
+    var list = $("ytList");
+    var toggle = $("ytToggle");
+    var modal = $("ytModal");
+    var frame = $("ytFrame");
+    var titleEl = $("ytModalTitle");
+    var ext = $("ytOpenExt");
+    var closeBtn = $("ytModalClose");
+    if (!list || !toggle) return;
+
+    list.innerHTML = "";
+    YT_PRACTICE.forEach(function (v, i) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "yt-item";
+      btn.setAttribute("role", "listitem");
+      btn.innerHTML =
+        '<span class="thumb" style="background-image:url(https://i.ytimg.com/vi/' +
+        v.id +
+        '/mqdefault.jpg)"></span>' +
+        '<span class="meta"><b>' +
+        (i + 1) +
+        ". " +
+        escapeHtml(v.title) +
+        "</b><small>" +
+        escapeHtml(v.ch) +
+        " · " +
+        escapeHtml(v.views) +
+        " · " +
+        escapeHtml(v.tag) +
+        "</small></span>";
+      btn.addEventListener("click", function () {
+        openYt(v);
+      });
+      list.appendChild(btn);
+    });
+
+    toggle.addEventListener("click", function () {
+      var open = list.classList.toggle("open");
+      toggle.classList.toggle("open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      var b = toggle.querySelector("b");
+      if (b) b.textContent = open ? "유튜브 영상 목록 닫기" : "유튜브 영상 목록 열기";
+    });
+
+    function openYt(v) {
+      if (!modal || !frame) {
+        window.open("https://www.youtube.com/watch?v=" + v.id, "_blank");
+        return;
+      }
+      titleEl.textContent = v.title;
+      ext.href = "https://www.youtube.com/watch?v=" + v.id;
+      frame.innerHTML =
+        '<iframe src="https://www.youtube.com/embed/' +
+        v.id +
+        '?autoplay=1&rel=0" title="' +
+        escapeHtml(v.title) +
+        '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeYt() {
+      if (!modal) return;
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      if (frame) frame.innerHTML = "";
+    }
+
+    if (closeBtn) closeBtn.addEventListener("click", closeYt);
+    if (modal) {
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeYt();
+      });
+    }
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeYt();
+    });
+  }
+
+  function escapeHtml(s) {
+    var d = document.createElement("div");
+    d.textContent = String(s == null ? "" : s);
+    return d.innerHTML;
+  }
+
+    function wireSisterLinks() {
     var a = $("linkEum");
     if (a) {
       if (CHUNGCHEONG_EUM_URL) {
@@ -680,6 +806,7 @@
   // boot
   loadLivingGraph().then(function () {
     wireSisterLinks();
+    wireYouTubePractice();
     renderGuide();
     if (me()) afterJoin();
     else $("btnProfile").textContent = "입장";

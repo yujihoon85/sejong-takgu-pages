@@ -422,6 +422,65 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 .sister-link small{display:block;color:var(--subtle);font-size:12px;margin-top:2px;line-height:1.4}
 .sister-link .arr{margin-left:auto;color:var(--subtle);font-size:16px}
 
+
+/* youtube practice list */
+.yt-panel .yt-toggle{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:14px 16px;border-radius:var(--radius-md);
+  border:1px solid var(--line);background:var(--bg-elev);color:inherit;
+  font:inherit;cursor:pointer;text-align:left;
+  transition:border-color var(--motion-quick), background var(--motion-quick);
+}
+.yt-panel .yt-toggle:hover{border-color:var(--line2);background:var(--bg-soft)}
+.yt-panel .yt-toggle b{display:block;font-size:14px;font-weight:600}
+.yt-panel .yt-toggle small{display:block;color:var(--subtle);font-size:12px;margin-top:3px}
+.yt-panel .yt-toggle .chev{color:var(--subtle);font-size:18px;transition:transform .2s}
+.yt-panel .yt-toggle.open .chev{transform:rotate(180deg)}
+.yt-list{display:none;margin-top:10px;border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;background:var(--bg-elev)}
+.yt-list.open{display:block}
+.yt-item{
+  width:100%;display:flex;align-items:flex-start;gap:12px;
+  padding:12px 14px;border:0;border-bottom:1px solid var(--line);
+  background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left;
+}
+.yt-item:last-child{border-bottom:0}
+.yt-item:hover{background:var(--bg-soft)}
+.yt-item .thumb{
+  width:88px;height:50px;border-radius:8px;flex:0 0 auto;
+  background:var(--bg-soft) center/cover no-repeat;border:1px solid var(--line);
+  position:relative;
+}
+.yt-item .thumb::after{
+  content:"";position:absolute;inset:0;margin:auto;width:0;height:0;
+  border-style:solid;border-width:7px 0 7px 12px;border-color:transparent transparent transparent rgba(255,255,255,.9);
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));
+  left:4px;right:0;top:0;bottom:0;
+}
+.yt-item .meta b{display:block;font-size:13px;font-weight:600;line-height:1.35}
+.yt-item .meta small{display:block;color:var(--subtle);font-size:11.5px;margin-top:4px;line-height:1.35}
+.yt-modal{
+  position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+  padding:16px;background:rgba(4,10,20,.72);backdrop-filter:blur(6px);
+}
+.yt-modal.open{display:flex}
+.yt-modal .box{
+  width:min(920px,100%);background:var(--bg);border:1px solid var(--line2);
+  border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);
+}
+.yt-modal .box-hd{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 14px;border-bottom:1px solid var(--line);
+}
+.yt-modal .box-hd b{font-size:13.5px;line-height:1.35}
+.yt-modal .box-hd button{
+  border:0;background:var(--bg-soft);color:var(--fg);width:34px;height:34px;
+  border-radius:10px;cursor:pointer;font-size:18px;line-height:1;
+}
+.yt-modal .frame{position:relative;aspect-ratio:16/9;background:#000}
+.yt-modal .frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.yt-modal .box-ft{padding:10px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--subtle)}
+.yt-modal .box-ft a{color:var(--accent-2)}
+
 </style>
 </head>
 <body>
@@ -512,6 +571,24 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
             <span class="arr">→</span>
           </a>
 </div>
+      </div>
+
+
+      <div class="panel yt-panel" style="margin-bottom:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>탁구 연습 · 정보 영상</h3>
+            <p>조회수 높은 레슨 모음 · 목록에서 골라 보기</p>
+          </div>
+        </div>
+        <button type="button" class="yt-toggle" id="ytToggle" aria-expanded="false">
+          <span>
+            <b>유튜브 영상 목록 열기</b>
+            <small>포·백 드라이브 · 커트 · 초보 팁 5선</small>
+          </span>
+          <span class="chev" aria-hidden="true">▾</span>
+        </button>
+        <div class="yt-list" id="ytList" role="list"></div>
       </div>
 
       <div class="grid-2">
@@ -774,6 +851,18 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 
     <p class="footer-note">세종시 어쩌다 운동하는 사람들 · 탁구방<br>sejong-takgu.impossible-cotton.workers.dev</p>
   </main>
+
+  
+  <div class="yt-modal" id="ytModal" aria-hidden="true">
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="ytModalTitle">
+      <div class="box-hd">
+        <b id="ytModalTitle">영상</b>
+        <button type="button" id="ytModalClose" aria-label="닫기">×</button>
+      </div>
+      <div class="frame" id="ytFrame"></div>
+      <div class="box-ft">유튜브에서 더 보기 · <a id="ytOpenExt" href="#" target="_blank" rel="noopener">새 탭으로 열기</a></div>
+    </div>
+  </div>
 
   <nav class="dock" aria-label="주요 메뉴">
     <div class="dock-inner">
