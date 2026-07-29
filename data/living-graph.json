@@ -1,0 +1,392 @@
+{
+  "version": "1.0.0",
+  "region": "세종특별자치시",
+  "community": "세종탁구방 · 어쩌다 운동하는 사람들",
+  "philosophy": "Quiet Infrastructure · Local OS · Human Loop · Graph of Neighbors",
+  "nodes": [
+    {
+      "id": "park",
+      "name": "박범근탁구클럽",
+      "type": "club",
+      "dong": "대평동",
+      "lat": 36.4715,
+      "lng": 127.2778,
+      "blurb": "새벽 조탁의 집 · 토일 06:00",
+      "links": [
+        "saerom",
+        "eojin",
+        "dapyeong"
+      ],
+      "naver": "대평동 박범근탁구클럽",
+      "nearby": [
+        "조탁 후 인근 카페",
+        "대평 생활권 주차"
+      ],
+      "tags": [
+        "dawn",
+        "jotak"
+      ]
+    },
+    {
+      "id": "lstep",
+      "name": "엘스텝 탁구클럽",
+      "type": "club",
+      "dong": "나성동",
+      "lat": 36.4892,
+      "lng": 127.2585,
+      "blurb": "금 10시 · 일 14시 리그",
+      "links": [
+        "nasung",
+        "boram",
+        "saerom"
+      ],
+      "naver": "엘스텝 탁구클럽 세종",
+      "nearby": [
+        "리그 관전",
+        "나성 상권"
+      ],
+      "tags": [
+        "league"
+      ]
+    },
+    {
+      "id": "uri",
+      "name": "세종우리탁구클럽",
+      "type": "club",
+      "dong": "도담동",
+      "lat": 36.5155,
+      "lng": 127.261,
+      "blurb": "도담 생활권 사설",
+      "links": [
+        "dodam",
+        "goun",
+        "hansol"
+      ],
+      "naver": "세종우리탁구클럽",
+      "nearby": [
+        "도담 복컴 병행"
+      ],
+      "tags": []
+    },
+    {
+      "id": "gounstep",
+      "name": "고운스텝",
+      "type": "club",
+      "dong": "고운동",
+      "lat": 36.514,
+      "lng": 127.236,
+      "blurb": "고운 생활권",
+      "links": [
+        "goun",
+        "jongchon"
+      ],
+      "naver": "고운스텝탁구클럽",
+      "nearby": [
+        "고운 복컴"
+      ],
+      "tags": []
+    },
+    {
+      "id": "saerom",
+      "name": "새롬동 복컴",
+      "type": "comp",
+      "dong": "새롬동",
+      "lat": 36.4868,
+      "lng": 127.2505,
+      "blurb": "벙개 선호 · 예약제",
+      "links": [
+        "eojin",
+        "park",
+        "nasung",
+        "hansol"
+      ],
+      "naver": "새롬동복합커뮤니티센터",
+      "nearby": [
+        "통합예약 필수",
+        "주말 오전 경쟁"
+      ],
+      "tags": [
+        "bungae",
+        "booking"
+      ]
+    },
+    {
+      "id": "eojin",
+      "name": "어진동 복컴",
+      "type": "comp",
+      "dong": "어진동",
+      "lat": 36.4975,
+      "lng": 127.269,
+      "blurb": "벙개 · 배드민턴 병행",
+      "links": [
+        "saerom",
+        "park"
+      ],
+      "naver": "어진동복합커뮤니티센터",
+      "nearby": [
+        "정부청사 생활권"
+      ],
+      "tags": [
+        "bungae"
+      ]
+    },
+    {
+      "id": "boram",
+      "name": "보람동 복컴",
+      "type": "comp",
+      "dong": "보람동",
+      "lat": 36.477,
+      "lng": 127.289,
+      "blurb": "남부 생활권 복컴",
+      "links": [
+        "sodam",
+        "lstep",
+        "sanul"
+      ],
+      "naver": "보람동복합커뮤니티센터",
+      "nearby": [
+        "소담·산울 연계"
+      ],
+      "tags": [
+        "booking"
+      ]
+    },
+    {
+      "id": "dodam",
+      "name": "도담 복컴",
+      "type": "comp",
+      "dong": "도담동",
+      "lat": 36.5188,
+      "lng": 127.2595,
+      "blurb": "도담 코트 예약",
+      "links": [
+        "uri",
+        "hansol",
+        "goun"
+      ],
+      "naver": "도담동복합커뮤니티센터",
+      "nearby": [
+        "도담 사설 병행"
+      ],
+      "tags": [
+        "booking"
+      ]
+    },
+    {
+      "id": "jongchon",
+      "name": "종촌 거점",
+      "type": "hub",
+      "dong": "종촌동",
+      "lat": 36.5055,
+      "lng": 127.247,
+      "blurb": "단지 커뮤니티 + 이웃",
+      "links": [
+        "goun",
+        "jiphyeon",
+        "gounstep"
+      ],
+      "naver": "종촌동",
+      "nearby": [
+        "아파트 커뮤니티장",
+        "고운 축"
+      ],
+      "tags": [
+        "resident"
+      ]
+    },
+    {
+      "id": "jiphyeon",
+      "name": "집현 거점",
+      "type": "hub",
+      "dong": "집현동",
+      "lat": 36.528,
+      "lng": 127.3,
+      "blurb": "집현동 이웃 네트워크",
+      "links": [
+        "jongchon",
+        "sodam"
+      ],
+      "naver": "집현동",
+      "nearby": [
+        "단지 커뮤니티",
+        "소담 연계"
+      ],
+      "tags": [
+        "resident"
+      ]
+    },
+    {
+      "id": "goun",
+      "name": "고운 거점",
+      "type": "hub",
+      "dong": "고운동",
+      "lat": 36.5105,
+      "lng": 127.2325,
+      "blurb": "고운동 멤버 허브",
+      "links": [
+        "jongchon",
+        "gounstep",
+        "dodam"
+      ],
+      "naver": "고운동",
+      "nearby": [
+        "고운스텝",
+        "종촌"
+      ],
+      "tags": [
+        "resident"
+      ]
+    },
+    {
+      "id": "nasung",
+      "name": "나성 거점",
+      "type": "hub",
+      "dong": "나성동",
+      "lat": 36.4905,
+      "lng": 127.256,
+      "blurb": "나성·엘스텝 축",
+      "links": [
+        "lstep",
+        "saerom"
+      ],
+      "naver": "나성동",
+      "nearby": [
+        "엘스텝 리그",
+        "새롬 복컴"
+      ],
+      "tags": [
+        "resident"
+      ]
+    },
+    {
+      "id": "sodam",
+      "name": "소담 거점",
+      "type": "hub",
+      "dong": "소담동",
+      "lat": 36.482,
+      "lng": 127.3005,
+      "blurb": "소담 생활권",
+      "links": [
+        "boram",
+        "jiphyeon",
+        "sanul"
+      ],
+      "naver": "소담동",
+      "nearby": [
+        "보람 복컴"
+      ],
+      "tags": [
+        "resident"
+      ]
+    },
+    {
+      "id": "dapyeong",
+      "name": "대평 거점",
+      "type": "hub",
+      "dong": "대평동",
+      "lat": 36.47,
+      "lng": 127.28,
+      "blurb": "조탁 축",
+      "links": [
+        "park"
+      ],
+      "naver": "대평동",
+      "nearby": [
+        "박범근 조탁"
+      ],
+      "tags": [
+        "resident",
+        "dawn"
+      ]
+    },
+    {
+      "id": "hansol",
+      "name": "한솔 거점",
+      "type": "hub",
+      "dong": "한솔동",
+      "lat": 36.4805,
+      "lng": 127.255,
+      "blurb": "한솔 생활권",
+      "links": [
+        "dodam",
+        "saerom"
+      ],
+      "naver": "한솔동",
+      "nearby": [
+        "도담·새롬"
+      ],
+      "tags": [
+        "resident"
+      ]
+    },
+    {
+      "id": "sanul",
+      "name": "산울 거점",
+      "type": "hub",
+      "dong": "산울동",
+      "lat": 36.4925,
+      "lng": 127.312,
+      "blurb": "산울 커뮤니티",
+      "links": [
+        "boram",
+        "sodam"
+      ],
+      "naver": "산울동",
+      "nearby": [
+        "보람·소담 축"
+      ],
+      "tags": [
+        "resident"
+      ]
+    }
+  ],
+  "schedules": [
+    {
+      "id": "jotak-weekend",
+      "title": "주말 조탁",
+      "when": "토·일 06:00~09:00",
+      "nodeId": "park",
+      "dong": "대평동",
+      "contact": "손씨님",
+      "kind": "jotak"
+    },
+    {
+      "id": "bungae-weekend",
+      "title": "주말 벙개",
+      "when": "토·일 09:30~",
+      "nodeId": "saerom",
+      "dong": "새롬동",
+      "contact": "lee · 느림보",
+      "kind": "bungae"
+    },
+    {
+      "id": "league-fri",
+      "title": "엘스텝 오전리그",
+      "when": "금 10:00",
+      "nodeId": "lstep",
+      "dong": "나성동",
+      "contact": "",
+      "kind": "league"
+    },
+    {
+      "id": "league-sun",
+      "title": "엘스텝 오후리그",
+      "when": "일 14:00",
+      "nodeId": "lstep",
+      "dong": "나성동",
+      "contact": "",
+      "kind": "league"
+    }
+  ],
+  "botCommands": {
+    "prefix": "세종",
+    "map": {
+      "인원": "RoomPulse read/update",
+      "이웃": "MemberHint by dong",
+      "오늘모집": "ScheduleItem / matching board",
+      "탁구장": "Node blurb by dong",
+      "faq": "static FAQ",
+      "질문": "Gemini with system prompt"
+    }
+  }
+}

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>세종시 어쩌다 운동하는 사람들 — 탁구방</title>
+<meta name="description" content="세종시 어쩌다 운동하는 사람들 · 탁구 커뮤니티 · 실시간 인원 · 코트 지도">
+<meta name="theme-color" content="#0c0f14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+
+:root{
+  --bg:#0c0f14;
+  --bg-elev:#12171f;
+  --bg-soft:#181e28;
+  --card:#141a23;
+  --fg:#eef1f5;
+  --muted:#9aa3b2;
+  --subtle:#6b7382;
+  --line:rgba(238,241,245,.10);
+  --line2:rgba(238,241,245,.16);
+  --accent:#d4784a;
+  --accent-2:#e8a57a;
+  --accent-fg:#0c0f14;
+  --ok:#5d9b7b;
+  --radius-xs:6px;
+  --radius-sm:10px;
+  --radius-md:14px;
+  --radius-lg:20px;
+  --radius-xl:28px;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;
+  --space-5:24px;--space-6:32px;--space-7:48px;
+  --font: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --display: "Instrument Serif", Georgia, serif;
+  --shadow: 0 18px 50px rgba(0,0,0,.35);
+  --motion-quick:150ms; --motion-fast:250ms; --motion-slow:400ms;
+  --ease: cubic-bezier(0.22,1,0.36,1);
+  --safe-b: env(safe-area-inset-bottom,0px);
+  --nav-h: 64px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--fg);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(var(--nav-h) + var(--safe-b) + 12px);
+}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:inherit}
+img{max-width:100%;display:block}
+.tabular{font-variant-numeric:tabular-nums}
+
+/* shell */
+.app{min-height:100%}
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 18px;
+  background:color-mix(in oklab, var(--bg) 88%, transparent);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{
+  width:36px;height:36px;border-radius:12px;
+  background:linear-gradient(160deg, #1a2330, #0e131a);
+  border:1px solid var(--line2);
+  display:grid;place-items:center;flex:0 0 auto;
+}
+.mark svg{width:18px;height:18px;color:var(--accent)}
+.brand h1{font-size:15px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.brand p{font-size:11.5px;color:var(--subtle);margin-top:2px}
+.top-actions{display:flex;gap:8px;align-items:center}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:40px;padding:0 14px;border-radius:var(--radius-sm);
+  font-size:13.5px;font-weight:600;letter-spacing:-.01em;
+  transition: transform var(--motion-quick) var(--ease), background var(--motion-quick), border-color var(--motion-quick), opacity var(--motion-quick);
+}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--fg);color:var(--accent-fg)}
+.btn-primary:hover{opacity:.92}
+.btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--fg)}
+.btn-ghost:hover{background:var(--bg-soft)}
+.btn-accent{background:var(--accent);color:var(--accent-fg)}
+.btn-block{width:100%}
+.btn-sm{height:34px;padding:0 11px;font-size:12.5px;border-radius:9px}
+.icon-btn{
+  width:40px;height:40px;border-radius:var(--radius-sm);
+  border:1px solid var(--line2);display:grid;place-items:center;color:var(--muted);
+}
+.icon-btn:hover{background:var(--bg-soft);color:var(--fg)}
+.icon-btn svg{width:18px;height:18px}
+
+main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
+.view{display:none}
+.view.on{display:block;animation:in var(--motion-fast) var(--ease)}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* hero */
+.hero{
+  position:relative;overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:var(--radius-xl);
+  background:
+    radial-gradient(900px 280px at 85% -10%, rgba(212,120,74,.18), transparent 55%),
+    radial-gradient(600px 240px at 0% 100%, rgba(93,155,123,.08), transparent 50%),
+    var(--card);
+  padding:28px 22px 22px;
+  margin-bottom:16px;
+}
+.hero-kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11.5px;font-weight:600;color:var(--accent-2);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;
+}
+.hero-kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;box-shadow:0 0 0 4px rgba(212,120,74,.15)}
+.hero h2{
+  font-family:var(--display);
+  font-weight:400;
+  font-size:clamp(1.85rem, 1.2rem + 2.4vw, 2.75rem);
+  line-height:1.12;
+  letter-spacing:-.03em;
+  max-width:16ch;
+}
+.hero h2 em{font-style:italic;color:var(--accent-2)}
+.hero-lead{margin-top:12px;color:var(--muted);font-size:14.5px;max-width:42ch;line-height:1.55}
+.hero-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px;
+}
+.stat{
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  padding:14px 12px;
+}
+.stat .n{font-size:1.55rem;font-weight:600;letter-spacing:-.03em;line-height:1}
+.stat .l{margin-top:6px;font-size:11.5px;color:var(--subtle);font-weight:500}
+
+/* grid */
+.grid-2{display:grid;gap:14px}
+@media(min-width:860px){
+  .grid-2{grid-template-columns:1.2fr .8fr}
+  .hero{padding:36px 32px 28px}
+}
+
+.panel{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  padding:18px;
+}
+.panel-hd{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  margin-bottom:14px;
+}
+.panel-hd h3{font-size:15px;font-weight:600;letter-spacing:-.02em}
+.panel-hd p{font-size:12.5px;color:var(--subtle);margin-top:3px;line-height:1.4}
+
+/* live rooms */
+.room-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:520px){.room-grid{grid-template-columns:repeat(3,1fr)}}
+.room{
+  text-align:left;
+  border:1px solid var(--line);
+  background:var(--bg-elev);
+  border-radius:var(--radius-md);
+  padding:12px 12px 11px;
+  transition:border-color var(--motion-quick), background var(--motion-quick), transform var(--motion-quick) var(--ease);
+}
+.room:hover,.room:focus-visible{border-color:var(--line2);background:var(--bg-soft);outline:none}
+.room:active{transform:scale(.98)}
+.room .count{font-size:1.4rem;font-weight:600;letter-spacing:-.03em;line-height:1}
+.room .name{margin-top:6px;font-size:12.5px;font-weight:600}
+.room .meta{margin-top:3px;font-size:11px;color:var(--subtle)}
+
+/* map */
+.map-shell{
+  position:relative;overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  background:#0a1018;
+  min-height:320px;
+}
+#map{height:min(52vh,440px);width:100%;z-index:1}
+@media(min-width:860px){#map{height:480px}}
+.map-hud{
+  position:absolute;z-index:5;left:10px;right:10px;top:10px;
+  display:flex;flex-wrap:wrap;gap:8px;pointer-events:none;
+}
+.chip{
+  pointer-events:auto;
+  display:inline-flex;align-items:center;gap:6px;
+  height:30px;padding:0 10px;border-radius:999px;
+  background:rgba(12,15,20,.88);border:1px solid var(--line2);
+  font-size:11.5px;font-weight:600;color:var(--muted);backdrop-filter:blur(8px);
+}
+.chip b{color:var(--fg);font-weight:600}
+.leaflet-container{background:#0a1018;font:inherit}
+.pin{
+  width:30px;height:30px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.85);
+  box-shadow:0 6px 16px rgba(0,0,0,.35);
+  display:grid;place-items:center;
+}
+.pin span{width:8px;height:8px;border-radius:50%;background:#fff}
+.pin.club{background:var(--accent)}
+.pin.comp{background:#3d5a80}
+.pin.hub{background:#4a5568}
+.pin.on{box-shadow:0 0 0 4px rgba(212,120,74,.28),0 6px 16px rgba(0,0,0,.35)}
+
+.detail h4{font-family:var(--display);font-size:1.45rem;font-weight:400;letter-spacing:-.02em;line-height:1.15}
+.detail .type{display:inline-flex;margin-top:8px;margin-bottom:10px;height:24px;align-items:center;padding:0 9px;border-radius:999px;border:1px solid var(--line2);font-size:11px;font-weight:600;color:var(--muted)}
+.detail .blurb{color:var(--muted);font-size:13.5px;line-height:1.5;margin-bottom:14px}
+.kv{display:grid;gap:8px;margin-bottom:14px}
+.kv .row{
+  display:flex;justify-content:space-between;gap:12px;
+  padding:10px 12px;border-radius:var(--radius-sm);
+  background:var(--bg-elev);border:1px solid var(--line);
+  font-size:12.5px;
+}
+.kv .row span{color:var(--subtle)}
+.kv .row b{font-weight:600}
+.edge-list{display:grid;gap:8px}
+.edge{
+  display:flex;gap:10px;align-items:flex-start;text-align:left;
+  padding:11px 12px;border-radius:var(--radius-sm);
+  border:1px solid var(--line);background:var(--bg-elev);
+  transition:border-color var(--motion-quick), background var(--motion-quick);
+}
+.edge:hover{border-color:var(--line2);background:var(--bg-soft)}
+.edge .dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:0 0 auto}
+.edge b{display:block;font-size:13px;font-weight:600}
+.edge small{display:block;margin-top:2px;color:var(--subtle);font-size:11.5px;line-height:1.4}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+
+/* list rows / tips */
+.list{display:grid;gap:2px}
+.item{
+  display:flex;gap:12px;align-items:center;
+  padding:12px;border-radius:var(--radius-sm);
+  border:1px solid transparent;
+}
+.item:hover{background:var(--bg-elev);border-color:var(--line)}
+.item .ico{
+  width:36px;height:36px;border-radius:11px;flex:0 0 auto;
+  display:grid;place-items:center;
+  background:var(--bg-soft);border:1px solid var(--line);color:var(--accent-2);
+}
+.item .ico svg{width:16px;height:16px}
+.item b{display:block;font-size:13.5px;font-weight:600}
+.item small{display:block;color:var(--subtle);font-size:12px;margin-top:2px;line-height:1.4}
+.item .tag{margin-left:auto;font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}
+
+/* chips / filters */
+.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.filter{
+  flex:0 0 auto;height:34px;padding:0 12px;border-radius:999px;
+  border:1px solid var(--line2);color:var(--muted);font-size:12.5px;font-weight:600;
+  background:transparent;
+}
+.filter.on{background:var(--fg);color:var(--accent-fg);border-color:var(--fg)}
+
+/* learn */
+.lesson{
+  border:1px solid var(--line);border-radius:var(--radius-md);
+  background:var(--bg-elev);overflow:hidden;margin-bottom:8px;
+}
+.lesson summary{
+  list-style:none;cursor:pointer;padding:14px 14px;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  font-size:14px;font-weight:600;
+}
+.lesson summary::-webkit-details-marker{display:none}
+.lesson summary::after{content:"";width:8px;height:8px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);transition:transform var(--motion-fast) var(--ease)}
+.lesson[open] summary::after{transform:rotate(225deg)}
+.lesson .body{padding:0 14px 14px;color:var(--muted);font-size:13.5px;line-height:1.65}
+.lesson .body b{color:var(--fg);font-weight:600}
+
+/* lounge */
+.compose textarea{
+  width:100%;min-height:92px;resize:vertical;
+  background:var(--bg-elev);border:1px solid var(--line2);
+  border-radius:var(--radius-md);padding:12px 14px;
+  outline:none;line-height:1.5;
+}
+.compose textarea:focus{border-color:rgba(212,120,74,.45);box-shadow:0 0 0 3px rgba(212,120,74,.12)}
+.compose .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
+.compose .who{font-size:12px;color:var(--subtle)}
+.post{
+  border:1px solid var(--line);border-radius:var(--radius-md);
+  background:var(--bg-elev);padding:14px;margin-bottom:10px;
+}
+.post .meta{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+.post .author{font-size:13px;font-weight:600}
+.post .time{font-size:11.5px;color:var(--subtle)}
+.post .msg{font-size:14px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.cmt{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.cmt-item{padding:6px 0}
+.cmt-item b{font-size:12px;color:var(--accent-2)}
+.cmt-item span{font-size:13px;color:var(--muted);margin-left:6px}
+.crow{display:flex;gap:8px;margin-top:8px}
+.crow input{
+  flex:1;height:38px;border-radius:var(--radius-sm);
+  border:1px solid var(--line2);background:var(--bg);padding:0 12px;outline:none;
+}
+.crow input:focus{border-color:rgba(212,120,74,.45)}
+
+/* rank */
+.rk{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.rk:last-child{border:none}
+.rk .no{width:24px;font-weight:600;font-size:13px;color:var(--subtle)}
+.rk .no.top{color:var(--accent-2)}
+.rk .nm{width:120px;font-size:13px;font-weight:600}
+.rk .bar{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.rk .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),rgba(212,120,74,.35));border-radius:99px}
+.rk .c{font-size:12px;color:var(--subtle);width:36px;text-align:right}
+
+/* bottom nav */
+.dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  padding:8px 12px calc(8px + var(--safe-b));
+  background:color-mix(in oklab, var(--bg) 90%, transparent);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);
+}
+.dock-inner{
+  max-width:520px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
+  background:var(--bg-elev);border:1px solid var(--line);
+  border-radius:18px;padding:6px;
+}
+.dock button{
+  height:48px;border-radius:13px;color:var(--subtle);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-size:10px;font-weight:600;
+}
+.dock button svg{width:18px;height:18px}
+.dock button.on{color:var(--fg);background:var(--bg-soft)}
+
+/* gate / toast */
+#gate{
+  display:none;position:fixed;inset:0;z-index:80;
+  background:rgba(8,10,14,.82);backdrop-filter:blur(8px);
+  padding:20px;align-items:center;justify-content:center;
+}
+#gate.on{display:flex}
+.gate-card{
+  width:min(400px,100%);
+  background:var(--card);border:1px solid var(--line2);
+  border-radius:var(--radius-xl);padding:24px 20px;box-shadow:var(--shadow);
+}
+.gate-card h2{font-family:var(--display);font-size:1.7rem;font-weight:400;letter-spacing:-.02em}
+.gate-card p{color:var(--muted);font-size:13.5px;margin:8px 0 16px;line-height:1.5}
+.gate-card input,.gate-card textarea{
+  width:100%;margin-bottom:8px;height:42px;
+  border-radius:var(--radius-sm);border:1px solid var(--line2);
+  background:var(--bg-elev);padding:0 12px;outline:none;
+}
+.gate-card textarea{height:72px;padding:10px 12px;resize:none}
+.gate-card input:focus,.gate-card textarea:focus{border-color:rgba(212,120,74,.45)}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-b) + 18px);
+  transform:translateX(-50%) translateY(8px);
+  background:var(--fg);color:var(--accent-fg);
+  padding:11px 16px;border-radius:999px;font-size:13px;font-weight:600;
+  opacity:0;pointer-events:none;transition:opacity var(--motion-fast), transform var(--motion-fast) var(--ease);
+  z-index:90;max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.empty{
+  text-align:center;padding:28px 14px;color:var(--subtle);font-size:13.5px;line-height:1.5;
+  border:1px dashed var(--line2);border-radius:var(--radius-md);
+}
+.skeleton{
+  height:72px;border-radius:var(--radius-md);
+  background:linear-gradient(90deg,var(--bg-elev),var(--bg-soft),var(--bg-elev));
+  background-size:200% 100%;animation:sh 1.2s linear infinite;
+}
+@keyframes sh{to{background-position:-200% 0}}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:11.5px;color:var(--subtle)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.footer-note{margin-top:18px;text-align:center;color:var(--subtle);font-size:11.5px;line-height:1.55}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+
+/* promo video */
+.video-wrap{
+  position:relative;border-radius:var(--radius-md);overflow:hidden;
+  border:1px solid var(--line);background:#000;aspect-ratio:16/9;
+}
+.video-wrap video{width:100%;height:100%;display:block;object-fit:cover}
+.sister-grid{display:grid;gap:8px}
+.sister-link{
+  display:flex;align-items:center;gap:12px;text-align:left;width:100%;
+  padding:12px 14px;border-radius:var(--radius-md);
+  border:1px solid var(--line);background:var(--bg-elev);
+  text-decoration:none;color:inherit;
+  transition:border-color var(--motion-quick), background var(--motion-quick);
+}
+.sister-link:hover{border-color:var(--line2);background:var(--bg-soft)}
+.sister-link .ico{
+  width:40px;height:40px;border-radius:12px;flex:0 0 auto;
+  display:grid;place-items:center;background:var(--bg-soft);border:1px solid var(--line);
+  color:var(--accent-2);
+}
+.sister-link .ico svg{width:18px;height:18px}
+.sister-link b{display:block;font-size:13.5px;font-weight:600}
+.sister-link small{display:block;color:var(--subtle);font-size:12px;margin-top:2px;line-height:1.4}
+.sister-link .arr{margin-left:auto;color:var(--subtle);font-size:16px}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16" opacity=".35"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div>
+        <h1>세종시 어쩌다 운동하는 사람들</h1>
+        <p>탁구방 · 조탁 · 벙개 · 이웃</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btnRefresh" title="새로고침" aria-label="데이터 새로고침">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-sm" id="btnProfile">입장</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section class="view on" data-view="home">
+      <div class="hero">
+        <div class="hero-kicker"><i></i> 세종 · 탁구 · 우리 동네</div>
+        <h2>인사만 하면<br><em>함께 치는</em> 사람들</h2>
+        <p class="hero-lead">새벽 조탁, 주말 벙개, 동별 이웃. 카톡 방에서 모이고, 여기서 코트·인원·일정을 한눈에 봐요.</p>
+        <div class="hero-stats">
+          <div class="stat"><div class="n tabular" id="stTotal">—</div><div class="l">동 합계 인원</div></div>
+          <div class="stat"><div class="n tabular" id="stDongs">—</div><div class="l">등록 동</div></div>
+          <div class="stat"><div class="n tabular" id="stNodes">15</div><div class="l">코트 노드</div></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>우리 방 홍보 영상</h3>
+            <p>주말 벙개 · 코트 모이는 하루 — 세종의 아침</p>
+          </div>
+        </div>
+        <div class="video-wrap">
+          <video
+            id="promoVideo"
+            controls
+            playsinline
+            preload="metadata"
+            poster=""
+            src="./media/sejong-pingpong-promo.mp4">
+            브라우저가 영상을 지원하지 않습니다.
+          </video>
+        </div>
+        <p class="blurb" style="margin:10px 0 0;color:var(--subtle);font-size:12.5px;line-height:1.45">
+          채팅방에 글 올리고, 라켓 챙기고, 복컴에서 인사하고, 즐탁 후 커피 한잔 — 그 흐름을 담았어요.
+        </p>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>같이 하는 우리 프로젝트</h3>
+            <p>탁구방 밖으로도 이어지는 동네 연결</p>
+          </div>
+        </div>
+        <div class="sister-grid">
+          <a class="sister-link" id="linkEum" href="#" target="_blank" rel="noopener">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18l-6-3V5l6 3 6-3 6 3v10l-6-3-6 3z"/><path d="M9 8v10M15 5v10"/></svg>
+            </span>
+            <span>
+              <b>충청이음</b>
+              <small>충청 지역 축제·장소가 지도 위에서 이어지는 플랫폼</small>
+            </span>
+            <span class="arr">→</span>
+          </a>
+          <a class="sister-link" href="https://capable-trifle-5168d7.netlify.app/" target="_blank" rel="noopener">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16" opacity=".35"/></svg>
+            </span>
+            <span>
+              <b>이전 탁구방 사이트</b>
+              <small>capable-trifle 라운지 · 배움터 버전</small>
+            </span>
+            <span class="arr">→</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-hd">
+            <div>
+              <h3>실시간 동별 인원</h3>
+              <p>카톡 <span class="tabular">세종 인원</span> 갱신값이 자동 반영됩니다</p>
+            </div>
+            <div class="chip" id="liveMeta">동기화 중</div>
+          </div>
+          <div class="room-grid" id="roomGrid">
+            <div class="skeleton"></div><div class="skeleton"></div>
+            <div class="skeleton"></div><div class="skeleton"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-hd">
+            <div>
+              <h3>이번 주 일정</h3>
+              <p>조탁 · 벙개 · 리그 한눈에</p>
+            </div>
+          </div>
+          <div class="list">
+            <div class="item">
+              <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+              <div><b>주말 조탁 06:00</b><small>대평동 박범근탁구클럽 · 손씨님</small></div>
+              <span class="tag">토·일</span>
+            </div>
+            <div class="item">
+              <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h10M4 17h14"/></svg></div>
+              <div><b>주말 벙개 09:30</b><small>새롬 · 어진 복컴 · lee / 느림보</small></div>
+              <span class="tag">토·일</span>
+            </div>
+            <div class="item">
+              <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></div>
+              <div><b>엘스텝 리그</b><small>금 10:00 · 일 14:00</small></div>
+              <span class="tag">리그</span>
+            </div>
+          </div>
+          <div class="actions" style="margin-top:14px">
+            <button class="btn btn-primary btn-sm" data-go="map">코트 지도 열기</button>
+            <button class="btn btn-ghost btn-sm" data-go="guide">코트 가이드</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>빠른 이동</h3>
+            <p>자주 쓰는 기능만 모았습니다</p>
+          </div>
+        </div>
+        <div class="list">
+          <button class="item" data-go="map" style="width:100%">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18l-6-3V5l6 3 6-3 6 3v10l-6-3-6 3z"/><path d="M9 8v10M15 5v10"/></svg></div>
+            <div style="text-align:left"><b>동네 코트 지도</b><small>주변 클럽·복컴·동 연결</small></div>
+          </button>
+          <button class="item" data-go="lounge" style="width:100%">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg></div>
+            <div style="text-align:left"><b>라운지</b><small>질문 · 자랑 · 팁 공유</small></div>
+          </button>
+          <button class="item" data-go="learn" style="width:100%">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+            <div style="text-align:left"><b>배움터</b><small>초보 탈출 5강</small></div>
+          </button>
+          <button class="item" data-go="pulse" style="width:100%">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg></div>
+            <div style="text-align:left"><b>랭킹 · 아침신문</b><small id="rankHint">주간 AI 요약</small></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>요즘 키워드</h3>
+            <p>대화 로그 주간 분석</p>
+          </div>
+        </div>
+        <div class="filters" id="kwRow">
+          <span class="filter on">#새롬복컴</span>
+          <span class="filter on">#벙개</span>
+          <span class="filter on">#드라이브</span>
+          <span class="filter on">#조탁</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAP -->
+    <section class="view" data-view="map">
+      <div class="panel-hd" style="padding:0 2px 12px">
+        <div>
+          <h3 style="font-size:18px">우리 동네 코트 지도</h3>
+          <p style="color:var(--subtle);font-size:13px;margin-top:4px">마커를 누르면 근처 코트·인원·일정이 이어져요</p>
+        </div>
+      </div>
+      <div class="filters" id="mapFilters" style="margin-bottom:12px">
+        <button class="filter on" data-filter="all">전체</button>
+        <button class="filter" data-filter="club">사설</button>
+        <button class="filter" data-filter="comp">복컴</button>
+        <button class="filter" data-filter="hub">동 거점</button>
+      </div>
+      <div class="grid-2">
+        <div class="map-shell">
+          <div class="map-hud">
+            <span class="chip">선택 <b id="selName">없음</b></span>
+            <span class="chip">연결 <b id="selEdges">0</b></span>
+          </div>
+          <div id="map"></div>
+        </div>
+        <div class="panel detail" id="detailPanel">
+          <h4>노드를 선택하세요</h4>
+          <p class="blurb">사설 클럽, 복컴, 동 거점을 탭하면 관계 패널이 열립니다. 인원 숫자는 카톡 봇과 같은 시트를 봅니다.</p>
+          <div class="legend">
+            <span><i style="background:var(--accent)"></i>사설 클럽</span>
+            <span><i style="background:#3d5a80"></i>복컴</span>
+            <span><i style="background:#4a5568"></i>동 거점</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GUIDE -->
+    <section class="view" data-view="guide">
+      <div class="panel">
+        <div class="panel-hd">
+          <div>
+            <h3>코트 가이드</h3>
+            <p>예약 · 길찾기 · 리그 · 복컴 팁</p>
+          </div>
+        </div>
+        <div class="list" id="guideList"></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>복컴 이용 요약</h3>
+            <p>세종시 통합예약 기준</p>
+          </div>
+        </div>
+        <div class="kv">
+          <div class="row"><span>예약</span><b>onestop.sejong.go.kr</b></div>
+          <div class="row"><span>시기</span><b>보통 14일 전</b></div>
+          <div class="row"><span>이용료</span><b>저렴 (예: 2시간 2천원대)</b></div>
+          <div class="row"><span>선호</span><b>새롬 · 어진 · 고운 · 보람</b></div>
+        </div>
+        <a class="btn btn-primary btn-block" href="https://onestop.sejong.go.kr" target="_blank" rel="noopener">통합예약 열기</a>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>근처 정보</h3>
+            <p>운동 전후 동선</p>
+          </div>
+        </div>
+        <div class="list">
+          <div class="item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg></div>
+            <div><b>메가커피 · 근처 카페</b><small>운동 후 수다 스팟 (방 문화)</small></div>
+          </div>
+          <div class="item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>
+            <div><b>아파트 커뮤니티장</b><small>입주민 전용 多 · 동별 개방시간 확인</small></div>
+          </div>
+          <div class="item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+            <div><b>카톡 봇 세종이</b><small>인원 · 이웃 · 오늘모집 · FAQ</small></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOUNGE -->
+    <section class="view" data-view="lounge">
+      <div class="panel compose">
+        <div class="panel-hd">
+          <div>
+            <h3>라운지</h3>
+            <p id="boardMode">전체 공유 게시판</p>
+          </div>
+        </div>
+        <textarea id="postMsg" placeholder="드라이브 팁, 벙개 후기, 코트 질문을 남겨 주세요"></textarea>
+        <div class="bar">
+          <span class="who" id="meLine">입장 후 글 작성 가능</span>
+          <button class="btn btn-primary btn-sm" id="btnPost">게시</button>
+        </div>
+      </div>
+      <div id="postList" style="margin-top:14px"><div class="empty">글을 불러오는 중…</div></div>
+    </section>
+
+    <!-- LEARN -->
+    <section class="view" data-view="learn">
+      <div class="panel">
+        <div class="panel-hd">
+          <div>
+            <h3>배움터 · 초보 탈출 5강</h3>
+            <p>코트에서 바로 쓰는 것만</p>
+          </div>
+        </div>
+        <details class="lesson" open><summary>1. 라켓 · 러버</summary><div class="body">입문은 <b>완성품 라켓</b>으로 충분합니다. 너무 빠른 러버보다 컨트롤 우선. 3~6개월마다 러버 상태 확인.</div></details>
+        <details class="lesson"><summary>2. 자세 · 발놀림</summary><div class="body">팔로만 치지 말고 <b>허리 회전 + 잔발</b>. 발이 멈추면 공도 멈춥니다.</div></details>
+        <details class="lesson"><summary>3. 포핸드 드라이브</summary><div class="body">아래에서 위로 감아올리기. 힘보다 <b>스윙 궤적과 접촉 시점</b>이 핵심입니다.</div></details>
+        <details class="lesson"><summary>4. 리시브 · 커트</summary><div class="body">하회전은 라켓을 살짝 눕혀 밀어주듯. 먼저 <b>코트에 안정적으로 넘기기</b>.</div></details>
+        <details class="lesson"><summary>5. 경기 감각</summary><div class="body">같은 코스 꾸준히 → 짧은 공/긴 공 섞기. 스매시는 <b>찬스볼에만</b>.</div></details>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>스타일 도감</h3>
+            <p>나와 맞는 플레이 유형</p>
+          </div>
+        </div>
+        <div class="room-grid">
+          <div class="room"><div class="count" style="font-size:1rem">Drive</div><div class="name">드라이브형</div><div class="meta">템포로 주도권</div></div>
+          <div class="room"><div class="count" style="font-size:1rem">Defend</div><div class="name">수비형</div><div class="meta">커트 · 끌어내기</div></div>
+          <div class="room"><div class="count" style="font-size:1rem">Course</div><div class="name">코스형</div><div class="meta">코스 바꿔 리듬 붕괴</div></div>
+          <div class="room"><div class="count" style="font-size:1rem">Double</div><div class="name">복식형</div><div class="meta">파트너 호흡</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PULSE -->
+    <section class="view" data-view="pulse">
+      <div class="panel">
+        <div class="panel-hd">
+          <div>
+            <h3>랠리 랭킹</h3>
+            <p>최근 대화 활성 (주간)</p>
+          </div>
+        </div>
+        <div id="rankList"><div class="empty">주간 데이터를 불러오는 중…</div></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>AI 아침신문</h3>
+            <p>GAS 주간 자동 발행</p>
+          </div>
+        </div>
+        <div id="newsBox"><div class="empty">신문이 도착하면 여기에 표시됩니다</div></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-hd">
+          <div>
+            <h3>방의 궤적</h3>
+            <p>2022 → 지금 이 방</p>
+          </div>
+        </div>
+        <div class="kv">
+          <div class="row"><span>2022</span><b>새벽 탁구로 이웃 모임 시작</b></div>
+          <div class="row"><span>성장</span><b>복컴 · 사설 넘나드는 즐탁</b></div>
+          <div class="row"><span>정착</span><b>대평 조탁 + 동별 벙개</b></div>
+          <div class="row"><span>2026</span><b>봇 + 지도 + 우리 영상</b></div>
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note">세종시 어쩌다 운동하는 사람들 · 탁구방<br>카톡 봇 · 충청이음 · 조탁 있는 동네</p>
+  </main>
+
+  <nav class="dock" aria-label="주요 메뉴">
+    <div class="dock-inner">
+      <button class="on" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>홈</button>
+      <button data-go="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18l-6-3V5l6 3 6-3 6 3v10l-6-3-6 3z"/></svg>지도</button>
+      <button data-go="guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 1.5"/></svg>코트</button>
+      <button data-go="lounge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>라운지</button>
+      <button data-go="pulse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>소식</button>
+    </div>
+  </nav>
+</div>
+
+<div id="gate">
+  <div class="gate-card">
+    <h2>커뮤니티 입장</h2>
+    <p>톡방 닉네임으로 입장하면 라운지 글과 소문을 남길 수 있습니다.</p>
+    <input id="gN" placeholder="닉네임 (예: 집현동 8부 음악미술)" autocomplete="nickname">
+    <input id="gC" placeholder="운동 경력 (예: 3년 / 시작)">
+    <input id="gB" placeholder="부수 (예: 8부 / 초심)">
+    <textarea id="gG" placeholder="목표 (예: 올해 드라이브 완성)"></textarea>
+    <button class="btn btn-primary btn-block" id="btnJoin" style="margin-top:8px">입장하기</button>
+    <button class="btn btn-ghost btn-block" id="btnGateClose" style="margin-top:8px">나중에</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
