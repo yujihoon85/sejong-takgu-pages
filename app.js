@@ -8,6 +8,11 @@
   // ── 사이트 설정 (여기만 고치면 됨) ──
   // 충청이음 실제 배포 주소. 없으면 클릭 시 안내 토스트.
   var CHUNGCHEONG_EUM_URL = "https://fragrant-night-c185.pages.dev/";
+  // 카카오 오픈채팅 초대 링크 (카톡 → 방 설정 → 초대 링크 복사)
+  // 예: "https://open.kakao.com/o/xxxxxxxx"
+  var KAKAO_OPENCHAT_URL = "";
+  // 현재 플랫폼 주소
+  var SITE_URL = "https://sejong-takgu.impossible-cotton.workers.dev/";
   // 예: "https://your-chungcheong-eum.example";
 
 
@@ -643,17 +648,32 @@
 
   function wireSisterLinks() {
     var a = $("linkEum");
-    if (!a) return;
-    if (CHUNGCHEONG_EUM_URL) {
-      a.href = CHUNGCHEONG_EUM_URL;
-      a.target = "_blank";
-      a.rel = "noopener";
-    } else {
-      a.href = "#";
-      a.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        toast("충청이음 주소를 app.js 의 CHUNGCHEONG_EUM_URL 에 넣어 주세요");
-      });
+    if (a) {
+      if (CHUNGCHEONG_EUM_URL) {
+        a.href = CHUNGCHEONG_EUM_URL;
+        a.target = "_blank";
+        a.rel = "noopener";
+      } else {
+        a.href = "#";
+        a.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          toast("충청이음 주소를 확인해 주세요");
+        });
+      }
+    }
+    var k = $("linkKakao");
+    if (k) {
+      if (KAKAO_OPENCHAT_URL && KAKAO_OPENCHAT_URL.indexOf("http") === 0) {
+        k.href = KAKAO_OPENCHAT_URL;
+        k.target = "_blank";
+        k.rel = "noopener";
+      } else {
+        k.href = "#";
+        k.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          toast("카톡 오픈채팅 초대 링크를 app.js 의 KAKAO_OPENCHAT_URL 에 넣어 주세요");
+        });
+      }
     }
   }
 
