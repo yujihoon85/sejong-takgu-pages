@@ -7,7 +7,7 @@
 
   // ── 사이트 설정 (여기만 고치면 됨) ──
   // 충청이음 실제 배포 주소. 없으면 클릭 시 안내 토스트.
-  var CHUNGCHEONG_EUM_URL = "https://hds-6zx2atnt68d8-6014-9nkau.grok-code-wild.hades-www.grok-sandbox.com/";
+  var CHUNGCHEONG_EUM_URL = "https://fragrant-night-c185.pages.dev/";
   // 예: "https://your-chungcheong-eum.example";
 
 

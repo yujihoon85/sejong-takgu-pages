@@ -1,0 +1,8 @@
+{
+  "name": "sejong-takgu-pages",
+  "private": true,
+  "scripts": {
+    "deploy:cf": "wrangler pages deploy . --project-name=sejong-takgu --commit-dirty=true",
+    "deploy:cf:dist": "wrangler pages deploy dist --project-name=sejong-takgu --commit-dirty=true"
+  }
+}
