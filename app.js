@@ -10,7 +10,7 @@
   var CHUNGCHEONG_EUM_URL = "https://fragrant-night-c185.pages.dev/";
   // 카카오 오픈채팅 초대 링크 (카톡 → 방 설정 → 초대 링크 복사)
   // 예: "https://open.kakao.com/o/xxxxxxxx"
-  var KAKAO_OPENCHAT_URL = "";
+  var KAKAO_OPENCHAT_URL = "https://open.kakao.com/o/g51E976e";
   // 현재 플랫폼 주소
   var SITE_URL = "https://sejong-takgu.impossible-cotton.workers.dev/";
   // 예: "https://your-chungcheong-eum.example";
