@@ -325,7 +325,125 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 .rk .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),rgba(212,120,74,.35));border-radius:99px}
 .rk .c{font-size:12px;color:var(--subtle);width:36px;text-align:right}
 
+/* play lab — premium games hub */
+.play-featured{
+  position:relative;overflow:hidden;margin-bottom:14px;
+  border:1px solid var(--line2);border-radius:var(--radius-xl);
+  background:
+    radial-gradient(700px 220px at 90% -20%, rgba(212,120,74,.28), transparent 55%),
+    radial-gradient(500px 180px at 0% 120%, rgba(93,155,123,.12), transparent 50%),
+    linear-gradient(165deg, #151b25 0%, #0e131a 100%);
+  padding:20px 18px 18px;
+}
+.play-featured .badge{
+  display:inline-flex;align-items:center;gap:6px;
+  height:24px;padding:0 10px;border-radius:999px;
+  background:rgba(212,120,74,.18);color:var(--accent-2);
+  font-size:11px;font-weight:700;letter-spacing:.04em;
+}
+.play-featured h3{
+  font-family:var(--display);font-weight:400;
+  font-size:clamp(1.55rem,1.1rem + 1.8vw,2.1rem);
+  letter-spacing:-.03em;margin:10px 0 6px;line-height:1.15;
+}
+.play-featured p{color:var(--muted);font-size:13.5px;max-width:36ch;line-height:1.5}
+.play-featured .feat-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.play-featured .hi{font-size:12px;color:var(--subtle);margin-top:10px}
+.play-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+}
+@media(min-width:640px){.play-grid{grid-template-columns:repeat(3,1fr)}}
+.play-card{
+  text-align:left;padding:14px 12px;border-radius:var(--radius-md);
+  background:linear-gradient(180deg, #171d27 0%, var(--bg-elev) 100%);
+  border:1.5px solid var(--line2);
+  transition:transform var(--motion-quick) var(--ease),border-color var(--motion-quick),box-shadow var(--motion-quick);
+  min-height:118px;display:flex;flex-direction:column;gap:6px;position:relative;
+}
+.play-card:active{transform:scale(.97)}
+.play-card:hover{border-color:rgba(212,120,74,.5);box-shadow:0 10px 28px rgba(0,0,0,.28)}
+.play-card .pc-ico{
+  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(145deg, rgba(212,120,74,.22), rgba(212,120,74,.08));
+  color:var(--accent-2);font-size:15px;font-weight:700;
+  border:1px solid rgba(212,120,74,.2);
+}
+.play-card b{font-size:13.5px;letter-spacing:-.02em}
+.play-card small{font-size:11.5px;color:var(--subtle);line-height:1.4}
+.play-card .tier{
+  position:absolute;top:10px;right:10px;
+  font-size:9.5px;font-weight:700;letter-spacing:.04em;
+  color:var(--accent-2);opacity:.85;
+}
+.play-stage{
+  display:none;margin-top:12px;
+  border:1px solid var(--line);border-radius:var(--radius-lg);
+  background:var(--card);overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+.play-stage.on{display:block;animation:in var(--motion-fast) var(--ease)}
+.play-stage-hd{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(255,255,255,.03), transparent);
+}
+.play-stage-hd h3{font-size:15px;font-weight:600}
+.play-stage-hd p{font-size:11.5px;color:var(--subtle);margin-top:2px}
+.play-canvas-wrap{
+  position:relative;background:#070a0f;
+  aspect-ratio:3/4;max-height:min(68vh,640px);
+}
+@media(min-width:720px){
+  .play-canvas-wrap{aspect-ratio:4/3;max-height:min(70vh,560px)}
+}
+.play-canvas-wrap canvas{
+  width:100%;height:100%;display:block;touch-action:none;
+}
+.play-pad{
+  display:none;grid-template-columns:repeat(5,1fr);gap:8px;
+  padding:10px 12px 4px;border-top:1px solid var(--line);
+  background:rgba(0,0,0,.25);
+}
+.play-pad.on{display:grid}
+.play-pad button{
+  height:48px;border-radius:12px;font-size:12px;font-weight:700;
+  background:var(--bg-soft);border:1px solid var(--line2);color:var(--fg);
+}
+.play-pad button:active{background:rgba(212,120,74,.25);border-color:rgba(212,120,74,.45)}
+.play-pad .wide{grid-column:span 2}
+.play-toolbar{
+  display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px;
+  border-top:1px solid var(--line);align-items:center;
+}
+.play-toolbar .spacer{flex:1}
+.play-score{
+  font-size:13px;font-weight:600;color:var(--accent-2);
+  font-variant-numeric:tabular-nums;line-height:1.35;
+}
+.play-form{padding:14px;display:grid;gap:10px}
+.play-form label{font-size:12px;color:var(--muted);font-weight:600}
+.play-form input,.play-form select,.play-form textarea{
+  width:100%;height:40px;border-radius:var(--radius-sm);
+  border:1px solid var(--line2);background:var(--bg);padding:0 12px;outline:none;
+}
+.play-form textarea{height:72px;padding:10px 12px;resize:vertical}
+.play-form input:focus,.play-form select:focus,.play-form textarea:focus{
+  border-color:rgba(212,120,74,.45);
+}
+.bio-card-preview{
+  margin:0 14px 14px;padding:18px;border-radius:var(--radius-md);
+  border:1px solid var(--line2);
+  background:
+    radial-gradient(400px 120px at 100% 0%, rgba(212,120,74,.2), transparent 60%),
+    var(--bg-elev);
+}
+.bio-card-preview .tag{font-size:11px;color:var(--accent-2);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.bio-card-preview h4{font-family:var(--display);font-size:1.6rem;margin:8px 0 4px;font-weight:400}
+.bio-card-preview .meta{font-size:13px;color:var(--muted)}
+.bio-card-preview .motto{margin-top:12px;font-size:14px;line-height:1.5;font-style:italic;color:var(--fg)}
+.dock-inner{max-width:560px}
 /* bottom nav */
+
 .dock{
   position:fixed;left:0;right:0;bottom:0;z-index:50;
   padding:8px 12px calc(8px + var(--safe-b));
@@ -334,18 +452,31 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
   border-top:1px solid var(--line);
 }
 .dock-inner{
-  max-width:520px;margin:0 auto;
-  display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
+  max-width:560px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(6,1fr);gap:3px;
   background:var(--bg-elev);border:1px solid var(--line);
   border-radius:18px;padding:6px;
 }
 .dock button{
-  height:48px;border-radius:13px;color:var(--subtle);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  font-size:10px;font-weight:600;
+  height:52px;border-radius:13px;color:var(--subtle);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:10px;font-weight:700;min-width:0;padding:0 2px;
+  line-height:1.1;
 }
-.dock button svg{width:18px;height:18px}
+.dock button svg{width:18px;height:18px;flex:0 0 auto}
 .dock button.on{color:var(--fg);background:var(--bg-soft)}
+/* 게임 탭 강조 — 하단에 확실히 보이게 */
+.dock button[data-go="play"]{
+  color:var(--accent-2);
+  background:rgba(212,120,74,.14);
+  border:1px solid rgba(212,120,74,.35);
+}
+.dock button[data-go="play"].on{
+  color:var(--accent-fg);
+  background:var(--accent);
+  border-color:transparent;
+}
+.dock button[data-go="play"] svg{color:inherit}
 
 /* gate / toast */
 #gate{
@@ -510,6 +641,10 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
         <div class="hero-kicker"><i></i> 세종 · 탁구 · 우리 동네</div>
         <h2>인사만 하면<br><em>함께 치는</em> 사람들</h2>
         <p class="hero-lead">새벽 조탁, 주말 벙개, 동별 이웃. 카톡 방에서 모이고, 여기서 코트·인원·일정을 한눈에 봐요.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
+          <button type="button" class="btn btn-accent" data-go="play">탁구 게임 열기</button>
+          <button type="button" class="btn btn-ghost" data-go="map">코트 지도</button>
+        </div>
         <div class="hero-stats">
           <div class="stat"><div class="n tabular" id="stTotal">—</div><div class="l">동 합계 인원</div></div>
           <div class="stat"><div class="n tabular" id="stDongs">—</div><div class="l">등록 동</div></div>
@@ -656,6 +791,10 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
           <button class="item" data-go="learn" style="width:100%">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
             <div style="text-align:left"><b>배움터</b><small>초보 탈출 5강</small></div>
+          </button>
+          <button class="item" data-go="play" style="width:100%">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5v14l11-7z"/></svg></div>
+            <div style="text-align:left"><b>탁구 게임</b><small>테트리스 · 디펜스 · 러너 외</small></div>
           </button>
           <button class="item" data-go="pulse" style="width:100%">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg></div>
@@ -849,6 +988,67 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
       </div>
     </section>
 
+    <!-- PLAY / GAMES — 탁구 게임 허브 -->
+    <section class="view" data-view="play">
+      <div class="panel-hd" style="padding:0 2px 12px">
+        <div>
+          <h3 style="font-size:18px">탁구 게임</h3>
+          <p style="color:var(--subtle);font-size:13px;margin-top:4px">세종 탁구방 감성 · 아케이드급 미니게임 컬렉션</p>
+        </div>
+      </div>
+
+      <div class="play-featured">
+        <span class="badge">NEW · FLAGSHIP</span>
+        <h3>즐탁 테트리스</h3>
+        <p>블록마다 즐탁·조탁·드라이브 같은 방 단어가 붙고, 라인 클리어 때 스매시 이펙트가 터집니다.</p>
+        <div class="feat-actions">
+          <button type="button" class="btn btn-accent" data-play="tetris">지금 플레이</button>
+          <button type="button" class="btn btn-ghost" data-play="td">코트 디펜스</button>
+        </div>
+        <div class="hi" id="tetrisHi">최고 기록 불러오는 중…</div>
+      </div>
+
+      <div class="play-grid" id="playGrid">
+        <button type="button" class="play-card" data-play="tetris"><span class="tier">HOT</span><span class="pc-ico">▣</span><b>즐탁 테트리스</b><small>단어 블록 · 스매시 클리어</small></button>
+        <button type="button" class="play-card" data-play="td"><span class="tier">ARCADE</span><span class="pc-ico">◆</span><b>코트 타워디펜스</b><small>라켓 타워 · 웨이브 공 방어</small></button>
+        <button type="button" class="play-card" data-play="runner"><span class="tier">ENDLESS</span><span class="pc-ico">▶</span><b>코트 러너</b><small>네트 점프 · 콤보 질주</small></button>
+        <button type="button" class="play-card" data-play="kaleido"><span class="tier">VISUAL</span><span class="pc-ico">◈</span><b>드라이브 만화경</b><small>궤적 파티클 시네마</small></button>
+        <button type="button" class="play-card" data-play="drum"><span class="tier">MUSIC</span><span class="pc-ico">♪</span><b>랠리 비트패드</b><small>8패드 신스 · 시퀀서</small></button>
+        <button type="button" class="play-card" data-play="globe"><span class="tier">WORLD</span><span class="pc-ico">◉</span><b>탁구 지구본</b><small>세종 하이라이트 노드</small></button>
+        <button type="button" class="play-card" data-play="particles"><span class="tier">FX</span><span class="pc-ico">✦</span><b>핑퐁 파티클</b><small>중력장 · 링크 필드</small></button>
+        <button type="button" class="play-card" data-play="ripple"><span class="tier">FX</span><span class="pc-ico">◎</span><b>테이블 리플</b><small>유체 시뮬레이션</small></button>
+        <button type="button" class="play-card" data-play="bio"><span class="tier">CARD</span><span class="pc-ico">◈</span><b>플레이어 카드</b><small>프로필 · PNG 저장</small></button>
+        <button type="button" class="play-card" data-play="meme"><span class="tier">CREATE</span><span class="pc-ico">✎</span><b>즐탁 밈공장</b><small>한 줄 밈 · 저장</small></button>
+      </div>
+
+      <div class="play-stage" id="playStage">
+        <div class="play-stage-hd">
+          <div>
+            <h3 id="playTitle">플레이</h3>
+            <p id="playHint">조작 안내</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="playClose">목록으로</button>
+        </div>
+        <div class="play-canvas-wrap" id="playCanvasWrap">
+          <canvas id="playCanvas" width="800" height="1000"></canvas>
+        </div>
+        <div class="play-pad" id="playPad" aria-label="터치 조작">
+          <button type="button" data-pad="left">←</button>
+          <button type="button" data-pad="rot">↻</button>
+          <button type="button" data-pad="right">→</button>
+          <button type="button" data-pad="soft">↓</button>
+          <button type="button" data-pad="hard">⤓</button>
+        </div>
+        <div id="playFormHost" class="play-form" style="display:none"></div>
+        <div class="play-toolbar" id="playToolbar">
+          <span class="play-score" id="playScore"></span>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-ghost btn-sm" id="playReset">리셋</button>
+          <button type="button" class="btn btn-accent btn-sm" id="playAction">시작</button>
+        </div>
+      </div>
+    </section>
+
     <p class="footer-note">세종시 어쩌다 운동하는 사람들 · 탁구방<br>sejong-takgu.impossible-cotton.workers.dev</p>
   </main>
 
@@ -868,6 +1068,7 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
     <div class="dock-inner">
       <button class="on" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>홈</button>
       <button data-go="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18l-6-3V5l6 3 6-3 6 3v10l-6-3-6 3z"/></svg>지도</button>
+      <button data-go="play" aria-label="탁구 게임"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5v14l11-7z"/></svg>게임</button>
       <button data-go="guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 1.5"/></svg>코트</button>
       <button data-go="lounge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>라운지</button>
       <button data-go="pulse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>소식</button>
@@ -890,6 +1091,7 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./app.js"></script>
+<script src="./play.js?v=2"></script>
+<script src="./app.js?v=2"></script>
 </body>
 </html>

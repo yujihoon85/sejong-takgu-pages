@@ -80,6 +80,10 @@
         if (!mapReady) initMap();
       }, 60);
     }
+    if (window.PlayLab) {
+      if (view === "play") window.PlayLab.onEnter();
+      else window.PlayLab.onLeave();
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   document.querySelectorAll("[data-go]").forEach(function (el) {
