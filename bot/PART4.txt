@@ -1,0 +1,816 @@
+// ========== 세종이 v16.3.1 PART 4/4 (줄 2453~3267) — 순서대로 이어 붙이세요 ==========
+function hasTodayBunggaeLog() {
+    var logs = getTodayAwardLogs();
+    for (var i = 0; i < logs.length; i++) {
+        var ty = logs[i].type;
+        if (ty === "벙개" || ty === "벙개참가" || ty === "벙개대기" ||
+            ty === "벙개취소" || ty === "벙개종료" || ty === "벙개참석자") {
+            return true;
+        }
+    }
+    return false;
+}
+
+function getTodayBunggaeMembers() {
+    var members = {};
+    var logs = getTodayAwardLogs();
+
+    for (var i = 0; i < logs.length; i++) {
+        var type = logs[i].type;
+        var name = logs[i].sender;
+        if (!name) continue;
+        if (type === "벙개" || type === "벙개참가" || type === "벙개참석자") members[name] = true;
+        if (type === "벙개취소") delete members[name];
+    }
+
+    try {
+        var bung = loadJSON(FILE_BUNGGAE, { host: "", members: [], created: "" });
+        if (bung && bung.created === getTodayKey()) {
+            if (bung.host) members[bung.host] = true;
+            if (bung.members && bung.members.length > 0) {
+                for (var j = 0; j < bung.members.length; j++) members[bung.members[j]] = true;
+            }
+        }
+    } catch (e) {}
+
+    var result = [];
+    for (var key in members) result.push(key);
+    return result;
+}
+
+function pickDailyAwardWinner() {
+    var attendees = getTodayBunggaeMembers();
+    var logs = getTodayAwardLogs();
+    if (attendees.length === 0) return "오늘의 즐탁 요정";
+
+    var score = {};
+    for (var i = 0; i < attendees.length; i++) score[attendees[i]] = 10;
+
+    for (var j = 0; j < logs.length; j++) {
+        var name = logs[j].sender;
+        var type = logs[j].type;
+        if (!score[name]) continue;
+        if (type === "벙개") score[name] += 8;
+        else if (type === "벙개참가") score[name] += 6;
+        else if (type === "경기결과") score[name] += 5;
+        else if (type === "복식") score[name] += 4;
+        else if (type === "매칭") score[name] += 3;
+        else if (type === "출석") score[name] += 2;
+        else if (type === "대화") score[name] += 1;
+    }
+
+    var best = attendees[0];
+    var bestScore = score[best] || 0;
+    for (var k = 0; k < attendees.length; k++) {
+        var n = attendees[k];
+        if ((score[n] || 0) > bestScore) { best = n; bestScore = score[n]; }
+    }
+    return best;
+}
+
+function getTodayAttendeeLine() {
+    var attendees = getTodayBunggaeMembers();
+    if (attendees.length === 0) return "오늘 벙개 참석자 기록 없음";
+
+    var line = "";
+    for (var i = 0; i < attendees.length && i < 10; i++) {
+        if (i > 0) line += ", ";
+        line += attendees[i];
+    }
+    if (attendees.length > 10) line += " 외 " + (attendees.length - 10) + "명";
+    return line;
+}
+
+function getRandomReward() {
+    return CRAZY_REWARD_POOL[Math.floor(Math.random() * CRAZY_REWARD_POOL.length)];
+}
+
+function buildDailyAwardSnapshot() {
+    var logs = getTodayAwardLogs();
+    var attendees = getTodayAttendeeLine();
+    var recent = [];
+    for (var i = logs.length - 1; i >= 0; i--) {
+        recent.push(logs[i]);
+        if (recent.length >= 10) break;
+    }
+    recent.reverse();
+
+    var msg = "오늘 벙개 참석자:\n" + attendees + "\n\n오늘 분위기 로그:\n";
+    if (recent.length === 0) {
+        msg += "- 오늘 로그가 거의 없음. 그래도 귀엽고 웃기게 상장 작성.\n";
+        return msg;
+    }
+    for (var j = 0; j < recent.length; j++) {
+        msg += "- [" + recent[j].type + "] " + recent[j].sender + ": " + recent[j].text + "\n";
+    }
+    return msg;
+}
+
+function buildLocalDailyAward() {
+    var winner = pickDailyAwardWinner();
+    var reward = getRandomReward();
+    var attendees = getTodayAttendeeLine();
+
+    var titles = [
+        "오늘의 라켓요정상 🧚‍♂️🏓", "스매싱보다 존재감이 강했상 ⚡🏓",
+        "공보다 빨리 웃겼상 😂💨", "즐탁 낭만 과다복용상 💊🏓",
+        "복컴을 빛낸 인간 조명상 💡✨", "오늘의 세종 탁구 아이돌상 🌟🏓",
+        "라켓 들고 온 평화의 전사상 🛡️🏓"
+    ];
+    var comments = [
+        "오늘 그냥 왔다 갔다 한 줄 알았는데, 분위기 지분을 야무지게 챙겼습니다.",
+        "공은 왔다 갔다 했지만, 웃음은 여기서 멈췄습니다.",
+        "이 정도면 탁구 치러 온 게 아니라 단톡방 예능 살리러 온 겁니다.",
+        "오늘의 즐탁 에너지가 너무 진해서 세종이가 그냥 지나칠 수 없었습니다.",
+        "승패는 모르겠고, 존재감은 이미 우승입니다.",
+        "라켓보다 더 빛난 건 회원님의 해맑은 즐탁력입니다."
+    ];
+
+    var title = titles[Math.floor(Math.random() * titles.length)];
+    var comment = comments[Math.floor(Math.random() * comments.length)];
+
+    return "🏆✨ 오늘의 벙개 상장 ✨🏆\n\n🎖️ 수상자: " + winner + "\n📜 " + title + "\n\n" +
+           "💬 " + comment + "\n\n🎁 가상상품: " + reward.emoji + " " + reward.name + "\n" +
+           "🤣 " + reward.line + "\n\n👥 오늘의 벙개 멤버\n" + attendees + "\n\n" +
+           "※ 진짜 상품 아님. 웃음만 실지급 😆🏓";
+}
+
+function buildGeminiDailyAward() {
+    var snapshot = buildDailyAwardSnapshot();
+    var reward = getRandomReward();
+    var winner = pickDailyAwardWinner();
+    var attendees = getTodayAttendeeLine();
+
+    var prompt =
+        "당신은 세종시 탁구 커뮤니티의 귀엽고 웃긴 일일 시상식 사회자입니다.\n" +
+        "오늘 벙개가 끝난 뒤 밤 9시에 단톡방에 올릴 짧은 상장을 작성하세요.\n\n" +
+        "중요 조건:\n1. 수상자는 반드시 아래 수상자 이름을 사용하세요: " + winner + "\n" +
+        "2. 참석자 문맥은 아래 벙개 참석자 목록을 반영하세요: " + attendees + "\n" +
+        "3. 450자 이내로 짧게 작성하세요.\n4. 이모티콘을 많이 사용하세요. 🏓😂🔥✨👑🎁🤣 같은 느낌.\n" +
+        "5. 글투는 귀엽고 유머스럽게, 단톡방 사람들이 웃게 작성하세요.\n6. 선정기준 설명은 길게 쓰지 마세요.\n" +
+        "7. 실제 상품이 아니라 가상 예능 상품임을 짧게 표시하세요.\n8. 비하, 조롱, 정치, 성적 표현 금지.\n\n" +
+        "출력 형식:\n🏆 오늘의 벙개 상장 🏆\n🎖️ 수상자: [이름]\n📜 [짧고 웃긴 상 이름]\n" +
+        "💬 [귀엽고 유머러스한 한두 문장]\n🎁 가상상품: [상품명]\n🤣 [짧은 농담]\n" +
+        "※ 진짜 상품 아님. 웃음만 실지급 😆\n\n오늘 추천 가상 리워드:\n" +
+        reward.emoji + " " + reward.name + "\n" + reward.line + "\n\n" + snapshot;
+
+    var aiText = callGeminiText(prompt);
+    if (!aiText) return buildLocalDailyAward();
+    return aiText;
+}
+
+function shouldSendDailyAward() {
+    var now = new Date();
+    if (now.getHours() < AWARD_TRIGGER_HOUR) return false;
+
+    var data = loadAwardData();
+    var today = getAwardDayKey(now);
+    if (data.lastAwardDate === today) return false;
+    if (AWARD_REQUIRE_BUNGGAE && !hasTodayBunggaeLog()) return false;
+    return true;
+}
+
+function generateDailyAward(markSent) {
+    var text = buildGeminiDailyAward();
+    if (markSent) {
+        var now = new Date();
+        var today = getAwardDayKey(now);
+        updateJSON(FILE_DAILY_AWARDS, { lastAwardDate: "", logs: [], history: [] }, function(data) {
+            data.lastAwardDate = today;
+            if (!data.history) data.history = [];
+            data.history.unshift({ day: today, time: getNowText(), text: text });
+            while (data.history.length > AWARD_HISTORY_LIMIT) data.history.pop();
+            return data;
+        });
+        incrementStat("daily_awards");
+    }
+    return text;
+}
+
+function maybeSendDailyAward(replier) {
+    try {
+        if (shouldSendDailyAward()) {
+            replier.reply(generateDailyAward(true));
+            return true;
+        }
+    } catch (e) {}
+    return false;
+}
+
+function showAwardStatus() {
+    var data = loadAwardData();
+    var today = getAwardDayKey(new Date());
+    var logs = getTodayAwardLogs();
+
+    var bunggaeCount = 0;
+    for (var i = 0; i < logs.length; i++) {
+        var ty = logs[i].type;
+        if (ty === "벙개" || ty === "벙개참가" || ty === "벙개대기" ||
+            ty === "벙개취소" || ty === "벙개종료" || ty === "벙개참석자") bunggaeCount++;
+    }
+
+    return "━━━ 🏆 일일 상장 에이전트 현황 ━━━\n\n📅 오늘: " + today + "\n" +
+           "📝 오늘 로그: " + logs.length + "개\n🏓 벙개 관련 로그: " + bunggaeCount + "개\n" +
+           "🏆 오늘 발송 여부: " + (data.lastAwardDate === today ? "발송 완료" : "아직") + "\n" +
+           "📚 상장 기록: " + data.history.length + "개\n\n⏰ 자동 발송: 매일 밤 9시 이후 첫 대화\n조건: 그날 벙개 로그가 있어야 발송";
+}
+
+function resetAwards() {
+    saveAwardData({ lastAwardDate: "", logs: [], history: [] });
+    return "✅ 일일 상장 에이전트 데이터를 초기화했어요.";
+}
+
+// =====================================================
+// 📊 현황/통계
+// =====================================================
+
+function showStatus() {
+    var aData = loadJSON(FILE_ATTEND, {});
+    var mData = loadJSON(FILE_MATCH, { players: [] });
+    if (!mData.players) mData.players = [];
+    var bData = loadJSON(FILE_BUNGGAE, { host: "", members: [] });
+    if (!bData.members) bData.members = [];
+    var rData = loadJSON(FILE_RESERVATIONS, []);
+
+    var todayKey = getTodayKey();
+    var attendCount = (aData[todayKey] || []).length;
+
+    return "━━━ 📊 오늘 현황 ━━━\n\n✅ 출석: " + attendCount + "명\n" +
+           "🎯 매칭 대기: " + mData.players.length + "명\n" +
+           "🏓 벙개 참가: " + bData.members.length + "명\n" +
+           "📅 예약: " + rData.length + "건";
+}
+
+function showStats() {
+    var stats = loadJSON(FILE_STATS, {});
+    var users = loadJSON(FILE_USERS, {});
+    var userCount = 0;
+    for (var key in users) {
+        if (key !== "__initialized__" && key !== "__nextId__" && key !== "__botVersion__") userCount++;
+    }
+
+    return "━━━ 📊 전체 통계 ━━━\n\n👥 총 회원: " + userCount + "명\n" +
+           "🎯 매칭 등록: " + (stats.matches || 0) + "회\n" +
+           "🏓 벙개 생성: " + (stats.bunggae_created || 0) + "회\n" +
+           "🙋 벙개 참가: " + (stats.bunggae_joins || 0) + "회\n" +
+           "✅ 출석: " + (stats.attendances || 0) + "회\n" +
+           "🤖 AI 질문: " + (stats.ai_questions || 0) + "회\n" +
+           "🏆 일일상장: " + (stats.daily_awards || 0) + "회\n" +
+           "🥇 ELO 경기: " + (stats.elo_matches || 0) + "회\n" +
+           "🎟️ 승부예측 개설: " + (stats.prediction_boards || 0) + "회\n" +
+           "🎁 승부예측 정산: " + (stats.prediction_settled || 0) + "회\n" +
+           "🤖 한마디 반응: " + (stats.react_agent_replies || 0) + "회\n" +
+           "📅 예약: " + (stats.reservations || 0) + "건";
+}
+
+
+// =====================================================
+// 📌 v16.2 FAQ / 오늘모집 / 관리자도움
+// =====================================================
+
+function findDongInText(text) {
+    if (!text) return "";
+    for (var i = 0; i < SEJONG_DONGS.length; i++) {
+        if (String(text).indexOf(SEJONG_DONGS[i]) >= 0) return SEJONG_DONGS[i];
+    }
+    // 짧은 별칭
+    var aliases = {
+        "산울": "산울동", "종촌": "종촌동", "집현": "집현동", "고운": "고운동",
+        "나성": "나성동", "새롬": "새롬동", "도담": "도담동", "보람": "보람동",
+        "한솔": "한솔동", "소담": "소담동", "아름": "아름동", "어진": "어진동",
+        "다정": "다정동", "반곡": "반곡동", "대평": "대평동", "해밀": "해밀동"
+    };
+    for (var k in aliases) {
+        if (String(text).indexOf(k) >= 0) return aliases[k];
+    }
+    return "";
+}
+
+function tryFaqAnswer(text) {
+    if (!text) return null;
+    var t = String(text).replace(/\s+/g, " ").trim();
+    var dong = findDongInText(t);
+
+    // ★ 동이 명시된 아파트/탁구 질문 → 동별 안내 (FAQ가 AI를 가로채지 않음)
+    if (dong && (t.indexOf("아파트") >= 0 || t.indexOf("탁구장") >= 0 || t.indexOf("탁구") >= 0 || t.indexOf("코트") >= 0)) {
+        var club = searchClub(dong);
+        // searchClub 기본 안내에 아파트 관점 한 줄 추가
+        return club + "\n\n🏠 아파트 커뮤니티장 참고\n" +
+               "· " + dong + " 단지 커뮤니티 탁구장은 보통 입주민 전용\n" +
+               "· '가장 좋은 곳'은 단지 시설·개방시간·실력대 매칭에 따라 다름\n" +
+               "· 외부인도 치려면 복컴/사설이 현실적\n" +
+               "· 같은 동 멤버: 세종 이웃 " + dong + "\n" +
+               "· 더 자세히: 세종 질문 " + dong + " 저녁에 치기 좋은 코트";
+    }
+
+    // 동 없이 아파트 일반 질문만 짧은 FAQ
+    if (t.indexOf("아파트") >= 0 && (t.indexOf("탁구") >= 0 || t.indexOf("커뮤니티") >= 0)) {
+        return "아파트 커뮤니티 탁구장 안내\n\n" +
+               "· 대부분 단지 입주민 전용\n" +
+               "· 시설·개방 시간은 단지마다 다름\n" +
+               "· '제일 좋은 곳'은 실력·거리·시간대에 따라 다름\n\n" +
+               "👉 동 이름을 넣어서 다시 물어보세요!\n" +
+               "예: 세종 산울동 아파트 탁구장\n" +
+               "예: 세종 탁구장 종촌동";
+    }
+
+    if (t.indexOf("복컴") >= 0 && (t.indexOf("예약") >= 0 || t.indexOf("어떻게") >= 0 || t.indexOf("방법") >= 0)) {
+        return "복컴 탁구 예약 요약\n\n1) 세종시 통합예약 onestop.sejong.go.kr\n2) 보통 14일 전부터 예약\n3) 1인 예약 횟수 제한 있음\n4) 이용료 저렴 (예: 2시간 2천원대)\n5) 평일/휴일 운영시간 다름\n\n동별: 세종 탁구장 복컴";
+    }
+    if (t.indexOf("부수") >= 0 && (t.indexOf("뭐") >= 0 || t.indexOf("뜻") >= 0 || t.indexOf("이란") >= 0)) {
+        return "탁구 '부수'는 대략적인 실력 등급이에요.\n숫자가 작을수록 고수 쪽 (예: 3부 > 7부).\n초보·초심·초심부는 입문 단계로 보면 됩니다.\n\n닉네임 예: 집현동 8부 닉네임";
+    }
+    if (t.indexOf("초보") >= 0 && (t.indexOf("시작") >= 0 || t.indexOf("배우") >= 0 || t.indexOf("입문") >= 0)) {
+        return "초보 입문 가이드\n\n1) 라켓은 입문용 완성품으로 시작\n2) 자세·발놀림이 팔 힘보다 중요\n3) 처음엔 랠리(주고받기) 위주\n4) 세종 팁 → 오늘의 연습 포인트\n5) 플랫폼 배움터 초보 탈출 5강\n\nhttps://sejong-takgu.pages.dev/";
+    }
+    if ((t.indexOf("인원") >= 0 || t.indexOf("몇 명") >= 0 || t.indexOf("몇명") >= 0) && (t.indexOf("어떻게") >= 0 || t.indexOf("조회") >= 0)) {
+        return "인원 조회: 세종 인원 종촌동\n인원 수정(관리자): 세종 인원 종촌동 26\n이웃 목록: 세종 이웃 종촌동";
+    }
+    if (t.indexOf("플랫폼") >= 0 || t.indexOf("홈페이지") >= 0 || (t.indexOf("사이트") >= 0 && t.indexOf("주소") >= 0)) {
+        return platformCard();
+    }
+    if (t.indexOf("충청이음") >= 0) {
+        return "충청이음 (축제·지도)\n" + CHUNGCHEONG_EUM_URL;
+    }
+    if (t.indexOf("카톡방") >= 0 || t.indexOf("오픈채팅") >= 0 || t.indexOf("단톡") >= 0) {
+        return "카카오 오픈채팅\n" + KAKAO_OPENCHAT_URL;
+    }
+    if (t.indexOf("밴드") >= 0) {
+        return "네이버 밴드\n" + BAND_URL;
+    }
+    return null;
+}
+
+function showFaqMenu() {
+    return "━━━ 📌 자주 묻는 질문 ━━━\n\n" +
+           "1) 복컴 예약 → 세종 질문 복컴 예약 어떻게 해?\n" +
+           "2) 아파트 탁구장 → 세종 탁구장 아파트\n" +
+           "3) 동별 코트 → 세종 탁구장 도담동\n" +
+           "4) 인원 확인 → 세종 인원 종촌동\n" +
+           "5) 이웃 목록 → 세종 이웃 집현동\n" +
+           "6) 오늘 칠 사람 → 세종 오늘모집\n" +
+           "7) 초보 가이드 → 세종 질문 초보 어떻게 시작?\n" +
+           "8) 플랫폼 → 세종 플랫폼\n9) 주간 신문 → 세종 신문\n\n" +
+           "💡 명령어를 몰라도 '세종' + 질문 문장으로 물어보세요.";
+}
+
+function getTodayRecruitData() {
+    return loadJSON(DATA_DIR + "today_recruit.json", { date: "", place: "", time: "", host: "", members: [] });
+}
+
+function saveTodayRecruitData(data) {
+    saveJSON(DATA_DIR + "today_recruit.json", data);
+}
+
+function todayRecruitCommand(sender, args) {
+    var today = getTodayKey();
+    var data = getTodayRecruitData();
+    if (data.date !== today) {
+        data = { date: today, place: "", time: "", host: "", members: [] };
+    }
+    var name = getShortName(sender);
+    var a = (args || "").trim();
+
+    if (!a || a === "현황" || a === "목록") {
+        if (!data.members || data.members.length === 0) {
+            return "━━━ 🏓 오늘 칠 사람 ━━━\n\n아직 없어요.\n\n💡 참가: 세종 오늘모집\n💡 장소: 세종 오늘모집 새롬복컴 19시";
+        }
+        var msg = "━━━ 🏓 오늘 칠 사람 (" + data.members.length + "명) ━━━\n";
+        if (data.place) msg += "📍 " + data.place + (data.time ? " · " + data.time : "") + "\n";
+        msg += "\n";
+        for (var i = 0; i < data.members.length; i++) {
+            msg += (i + 1) + ". " + data.members[i] + (data.members[i] === data.host ? " 👑" : "") + "\n";
+        }
+        msg += "\n💡 참가: 세종 오늘모집\n💡 취소: 세종 오늘모집 취소";
+        msg += "\n📅 예약: " + BOOKING_URL;
+        msg += "\n🌐 웹: " + PLATFORM_URL;
+        return msg;
+    }
+
+    if (a === "취소" || a === "빠질게" || a === "불참") {
+        var idx = data.members.indexOf(name);
+        if (idx < 0) return "ℹ️ 오늘 모집 명단에 없어요.";
+        data.members.splice(idx, 1);
+        if (data.host === name) data.host = data.members[0] || "";
+        saveTodayRecruitData(data);
+        try { syncTodayRecruitToGas(data, sender); } catch (eC) {}
+        return "✅ " + name + "님 오늘 모집에서 빠졌어요. (남은 " + data.members.length + "명)";
+    }
+
+    if (a === "초기화") {
+        if (!isAdmin(sender)) return "🚫 초기화는 관리자만 가능해요.";
+        data = { date: today, place: "", time: "", host: "", members: [] };
+        saveTodayRecruitData(data);
+        return "🗑️ 오늘 모집을 초기화했어요.";
+    }
+
+    var parts = a.split(/\s+/);
+    if (data.members.indexOf(name) < 0) {
+        data.members.push(name);
+        if (!data.host) data.host = name;
+    }
+    if (parts[0] && parts[0] !== "참가") {
+        data.place = parts[0];
+        if (parts[1]) data.time = parts[1];
+    }
+    saveTodayRecruitData(data);
+    try { syncTodayRecruitToGas(data, sender); } catch (eSync) {}
+    incrementStat("today_recruit");
+    addAwardLog("오늘모집", sender, (data.place || "") + " " + (data.time || ""));
+    var out = "✅ " + name + "님 오늘 모집 등록! (" + data.members.length + "명)\n";
+    if (data.place) out += "📍 " + data.place + (data.time ? " · " + data.time : "") + "\n";
+    out += "\n현황: 세종 오늘모집 현황";
+    out += "\n예약: " + BOOKING_URL;
+    out += "\n웹: " + PLATFORM_URL;
+    if (data.time) out += "\n\n⏰ 리마인드: 시작 전 채팅에서 '세종 오늘모집 현황'으로 인원 확인!";
+    return out;
+}
+
+function adminHelp() {
+    return "━━━ 👑 관리자 치트시트 ━━━" + "\n\n" +
+           "인원" + "\n" + "• 세종 인원 종촌동" + "\n" + "• 세종 인원 종촌동 26" + "\n\n" +
+           "API / 점검" + "\n" + "• 세종 API상태" + "\n" + "• 세종 API설정 AIzaSy..." + "\n" + "• 세종 AI테스트" + "\n" + "• 세종 헬스체크" + "\n\n" +
+           "운영" + "\n" + "• 세종 통계" + "\n" + "• 세종 초기화 / 매칭초기화" + "\n" + "• 세종 상장 / 상장초기화" + "\n" + "• 세종 회원DB초기화" + "\n" + "• 세종 오늘모집 초기화" + "\n\n" +
+           "제재" + "\n" + "• 세종 차단 [닉]" + "\n" + "• 세종 차단해제 [닉]" + "\n" + "• 세종 관리자추가 [닉]" + "\n\n" +
+           "링크" + "\n" + "• 플랫폼 " + PLATFORM_URL + "\n" + "• 카톡방 " + KAKAO_OPENCHAT_URL + "\n" + "• 충청이음 " + CHUNGCHEONG_EUM_URL + "\n" + "• 예약 " + BOOKING_URL;
+}
+
+
+// =====================================================
+// 📖 도움말
+// =====================================================
+
+function help() {
+    return "━━━ 🏓 세종이 v16.3 ━━━" + "\n\n" +
+           "💬 자연어" + "\n" + "• 세종 + 궁금한 점" + "\n" + "  예: 세종 아파트 탁구장 어디가 좋아요?" + "\n\n" +
+           "🤖 AI / FAQ" + "\n" + "• 세종 질문 [내용]" + "\n" + "• 세종 faq" + "\n" + "• 세종 AI테스트 / 헬스체크" + "\n\n" +
+           "👥 인원·이웃" + "\n" + "• 세종 인원 종촌동" + "\n" + "• 세종 인원 종촌동 26 (관리자)" + "\n" + "• 세종 이웃 집현동" + "\n\n" +
+           "🏓 오늘 모집" + "\n" + "• 세종 오늘모집" + "\n" + "• 세종 오늘모집 새롬복컴 19시" + "\n" + "• 세종 오늘모집 현황 / 취소" + "\n\n" +
+           "🔥 벙개·매칭" + "\n" + "• 세종 벙개 [장소] [시간] [인원]" + "\n" + "• 세종 참가 / 벙개현황" + "\n" + "• 세종 매칭 / 매칭가이드 / 매칭시작" + "\n\n" +
+           "📰 주간·웹" + "\n" + "• 세종 신문" + "\n" + "• 세종 플랫폼" + "\n" + "• 세종 충청이음" + "\n\n" +
+           "🔍 정보" + "\n" + "• 세종 탁구장 [동]" + "\n" + "• 세종 검색 [이름]" + "\n" + "• 세종 날씨 / 맛집 / 팁" + "\n\n" +
+           "✅ 활동" + "\n" + "• 세종 출석 / 내정보 / 랭킹" + "\n\n" +
+           "👑 방장" + "\n" + "• 세종 관리자도움" + "\n\n" +
+           "🌐 " + PLATFORM_URL;
+}
+
+
+// =====================================================
+// 📋 명령어
+// =====================================================
+
+var commands = {
+    "": function(replier) { replier.reply(help()); },
+    "도움말": function(replier) { replier.reply(help()); },
+    "버전": function(replier) { replier.reply("🏓 " + BOT_NAME + "\n버전: " + BOT_VERSION + "\n모델: " + GEMINI_MODEL); },
+    "인원": function(replier, sender, args) {
+        if (!args) {
+            replier.reply("💡 사용법\n• 조회: 세종 인원 종촌동\n• 업데이트(관리자): 세종 인원 종촌동 15");
+            return;
+        }
+        var parts = args.trim().split(/\s+/);
+        var room = parts[0];
+        var count = parts[1] ? parseInt(parts[1], 10) : null;
+
+        if (count !== null && !isNaN(count)) {
+            replier.reply(updateRoomCount(room, count, sender));
+        } else {
+            replier.reply(getRoomCount(room));
+        }
+    },
+    "질문": function(replier, sender, args) { replier.reply(args ? askGemini(args, sender) : "💡 사용법: 세종 질문 [내용]"); },
+    "AI테스트": function(replier) { replier.reply(testAI()); },
+    "faq": function(replier) { replier.reply(showFaqMenu()); },
+    "이웃": function(replier, sender, args) {
+        if (!args) { replier.reply("💡 사용법: 세종 이웃 집현동\n예: 세종 이웃 고운동"); return; }
+        replier.reply(getMembersByDong(args.trim()));
+    },
+    "오늘모집": function(replier, sender, args) { replier.reply(todayRecruitCommand(sender, args)); },
+    "관리자도움": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용입니다."); return; }
+        replier.reply(adminHelp());
+    },
+
+    "날씨": function(replier) { replier.reply(fetchWeatherNow(WEATHER_CITY)); },
+    "맛집": function(replier) { replier.reply(getRealSejongRestaurant()); },
+    "카페": function(replier) { replier.reply(getSejongCafe()); },
+    "유튜브": function(replier) { replier.reply(getYouTube()); },
+    "뉴스": function(replier) { replier.reply("📰 BAND\n" + BAND_URL); },
+
+    "탁구장": function(replier, sender, args) { replier.reply(searchClub(args)); },
+    "검색": function(replier, sender, args) { replier.reply(searchMember(args)); },
+
+    "매칭": function(replier, sender) { replier.reply(registerForMatch(sender)); },
+    "매칭취소": function(replier, sender) { replier.reply(cancelMatch(sender)); },
+    "매칭목록": function(replier) { replier.reply(showMatchList()); },
+    "매칭시작": function(replier) { replier.reply(startMatch()); },
+    "복식": function(replier) { replier.reply(startDoubleMatch()); },
+
+    "벙개": function(replier, sender, args) {
+        var base = createBungae(sender, args);
+        replier.reply(base + "\n\n📅 복컴 예약\n" + BOOKING_URL + "\n🌐 플랫폼\n" + PLATFORM_URL);
+    },
+    "참가": function(replier, sender) { replier.reply(joinBungae(sender)); },
+    "참가취소": function(replier, sender) { replier.reply(leaveBungae(sender)); },
+    "벙개현황": function(replier) { replier.reply(showBungaeStatus()); },
+    "벙종": function(replier, sender) { replier.reply(cancelBungae(sender)); },
+    "벙개종료": function(replier, sender) { replier.reply(cancelBungae(sender)); },
+
+    "예약": function(replier, sender, args) { replier.reply(addReservation(sender, args)); },
+    "예약목록": function(replier) { replier.reply(showReservations()); },
+    "예약초기화": function(replier, sender) { replier.reply(clearReservations(sender)); },
+
+    "출석": function(replier, sender) { replier.reply(checkAttendance(sender)); },
+    "포인트": function(replier, sender) { replier.reply(showPoint(sender)); },
+    "내정보": function(replier, sender) { replier.reply(showMyCard(sender)); },
+    "랭킹": function(replier) { replier.reply(showRanking()); },
+    "팁": function(replier) { replier.reply(getTableTennisTip()); },
+    "현황": function(replier) { replier.reply(showStatus()); },
+
+    "승리": function(replier, sender, args) { replier.reply(requestWin(sender, args)); },
+    "확인": function(replier, sender) { replier.reply(confirmWin(sender)); },
+    "전적": function(replier, sender, args) { replier.reply(showRecord(args)); },
+    "ELO": function(replier) { replier.reply(showEloRanking()); },
+
+    "도전": function(replier, sender, args) { replier.reply(openChallengePrediction(sender, args)); },
+    "예측판": function(replier, sender, args) { replier.reply(openManualPrediction(sender, args)); },
+    "예측현황": function(replier) { replier.reply(predictionStatusText()); },
+    "픽": function(replier, sender, args) { replier.reply(placePredictionPick(sender, args)); },
+    "응원픽": function(replier, sender, args) { replier.reply(placePredictionPick(sender, args)); },
+    "예측취소": function(replier, sender) { replier.reply(cancelPredictionEvent(sender)); },
+
+    "상장": function(replier) { replier.reply(generateDailyAward(true)); },
+    "상장현황": function(replier) { replier.reply(showAwardStatus()); },
+    "상장미리보기": function(replier) { replier.reply(generateDailyAward(false)); },
+
+    "상장초기화": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        replier.reply(resetAwards());
+    },
+    "회원DB초기화": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        var added = initMemberDB();
+        replier.reply("🛠️ 회원DB 초기화 완료\n추가 등록: " + added + "명");
+    },
+    "API설정": function(replier, sender, args) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        if (args && args.indexOf("AIzaSy") === 0) {
+            saveAPIKey(args.trim());
+            replier.reply("✅ Gemini API 키 설정 완료!");
+        } else {
+            replier.reply("❌ 올바른 Gemini API 키를 입력해주세요.\nAIzaSy... 로 시작해야 합니다.");
+        }
+    },
+    "API상태": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        replier.reply(getApiStatus());
+    },
+    "API삭제": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        clearAPIKey();
+        replier.reply("✅ Gemini API 키를 삭제했어요.");
+    },
+    "통계": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        replier.reply(showStats());
+    },
+    "초기화": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        saveJSON(FILE_MATCH, { players: [] });
+        saveJSON(FILE_BUNGGAE, { host: "", members: [], wait: [], max: 8 });
+        replier.reply("🗑️ 매칭/벙개 초기화 완료");
+    },
+    "매칭초기화": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        saveJSON(FILE_MATCH, { players: [] });
+        replier.reply("🗑️ 매칭 초기화 완료");
+    },
+    "차단": function(replier, sender, args) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        if (!args) { replier.reply("💡 사용법: 세종 차단 [닉네임]"); return; }
+        blockUser(args.trim());
+        replier.reply("🚫 차단 완료: " + args);
+    },
+    "차단해제": function(replier, sender, args) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        if (!args) { replier.reply("💡 사용법: 세종 차단해제 [닉네임]"); return; }
+        unblockUser(args.trim());
+        replier.reply("✅ 차단 해제 완료: " + args);
+    },
+    "관리자추가": function(replier, sender, args) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        if (!args) { replier.reply("💡 사용법: 세종 관리자추가 [닉네임]"); return; }
+        addAdmin(args.trim());
+        replier.reply("👑 관리자 추가 완료: " + args);
+    },
+
+    // ── v16.3 웹·주간·점검 ──
+    "플랫폼": function(replier) { replier.reply(platformCard()); },
+    "홈페이지": function(replier) { replier.reply(platformCard()); },
+    "사이트": function(replier) { replier.reply(platformCard()); },
+    "충청이음": function(replier) { replier.reply("충청이음\n" + CHUNGCHEONG_EUM_URL); },
+    "카톡방": function(replier) { replier.reply("카카오 오픈채팅\n" + KAKAO_OPENCHAT_URL); },
+    "오픈채팅": function(replier) { replier.reply("카카오 오픈채팅\n" + KAKAO_OPENCHAT_URL); },
+    "신문": function(replier) { replier.reply(fetchWeeklyDigest()); },
+    "주간": function(replier) { replier.reply(fetchWeeklyDigest()); },
+    "아침신문": function(replier) { replier.reply(fetchWeeklyDigest()); },
+    "헬스체크": function(replier) { replier.reply(healthCheck()); },
+    "점검": function(replier) { replier.reply(healthCheck()); },
+    "매칭가이드": function(replier) { replier.reply(matchGuide()); },
+    "예약링크": function(replier) { replier.reply("📅 세종시 복컴 통합예약\n" + BOOKING_URL + "\n\n보통 14일 전 · 1인 횟수 제한"); }
+};
+
+// =====================================================
+// 🚀 봇 시작
+// =====================================================
+
+function onStartCompile() {
+    try { initMemberDB(); } catch (e) {}
+}
+
+
+// =====================================================
+// 🔤 명령 해석 — 띄어쓴 두·세 단어 명령 자동 합침 (v16.3.1)
+//  예: "벙개 현황" → 벙개현황
+//      "오늘 모집 현황" → 오늘모집 + args 현황
+//      "매칭 시작" → 매칭시작
+// =====================================================
+function resolveCommand(userInput) {
+    userInput = String(userInput || "").replace(/\s+/g, " ").trim();
+    if (!userInput) return { command: "", args: "" };
+
+    var parts = userInput.split(" ");
+    // 긴 후보부터: 3단어 붙임 → 2단어 붙임 → 1단어
+    var maxN = parts.length < 3 ? parts.length : 3;
+    for (var n = maxN; n >= 1; n--) {
+        var joined = parts.slice(0, n).join("");      // 벙개현황
+        var spaced = parts.slice(0, n).join(" ");     // 벙개 현황
+        var rest = parts.slice(n).join(" ");
+
+        if (commands[joined]) {
+            return { command: joined, args: rest };
+        }
+        if (COMMAND_ALIASES[joined]) {
+            return { command: COMMAND_ALIASES[joined], args: rest };
+        }
+        if (COMMAND_ALIASES[spaced]) {
+            return { command: COMMAND_ALIASES[spaced], args: rest };
+        }
+        // commands 에 spaced 키가 있는 경우 (거의 없음)
+        if (commands[spaced]) {
+            return { command: spaced, args: rest };
+        }
+    }
+
+    // 기본: 첫 토큰
+    var cmd = parts[0];
+    if (COMMAND_ALIASES[cmd]) cmd = COMMAND_ALIASES[cmd];
+    return { command: cmd, args: parts.slice(1).join(" ") };
+}
+
+// =====================================================
+// 🎯 메인 응답
+// =====================================================
+
+function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
+    try {
+        if (!msg) return;
+        if (isBlocked(sender)) return;
+
+        try { autoBackupOncePerDay(); } catch (e) {}
+        try { autoCleanupStaleBungae(); } catch (e) {}
+        try { saveWeeklyRankSnapshotIfNewWeek(); } catch (e) {}
+
+        updateMemberDB(sender);
+
+        // 대화 로그 → GAS (실패해도 봇 응답에 영향 없음)
+        try { sendToSheet(room, sender, msg); } catch (e) {}
+
+        // 일반 대화 (트리거 없음)
+        try {
+            if (msg && msg.indexOf(TRIGGER) !== 0) {
+                if (!isProbablyMediaMessage(msg)) {
+                    addAwardLog("대화", sender, msg);
+                }
+                if (maybeSendDailyAward(replier)) return;
+                if (maybeOpenPredictionFromText(msg, replier)) return;
+                if (maybeRunReactEmotionAgent(msg, sender, replier)) return;
+            }
+        } catch (e) {}
+
+        if (msg.indexOf(TRIGGER) !== 0) return;
+
+        if (checkSpam(sender)) {
+            replier.reply("⚠️ 도배 감지!\n5초 후 다시 시도해주세요.");
+            return;
+        }
+
+        var userInput = msg.replace(TRIGGER, "").trim();
+        // "세종질문 xxx" 붙여쓰기 보정
+        if (userInput.indexOf("질문") === 0 && userInput.length > 2 && userInput.charAt(2) !== " ") {
+            userInput = "질문 " + userInput.substring(2).trim();
+        }
+        // 연속 공백 정리
+        userInput = userInput.replace(/\s+/g, " ").trim();
+
+        // ★ v16.3.1: "벙개 현황" "오늘 모집" "매칭 시작" 등 띄어쓰기 명령 인식
+        var resolved = resolveCommand(userInput);
+        var command = resolved.command;
+        var args = resolved.args;
+
+        // 자연어 인원
+        if (userInput.indexOf("몇명") >= 0 || userInput.indexOf("몇 명") >= 0 || userInput.indexOf("인원수") >= 0) {
+            for (var i = 0; i < SEJONG_DONGS.length; i++) {
+                if (userInput.indexOf(SEJONG_DONGS[i]) >= 0) {
+                    replier.reply(getRoomCount(SEJONG_DONGS[i]));
+                    return;
+                }
+            }
+        }
+
+        // 자연어 이웃
+        if (userInput.indexOf("이웃") >= 0 || (userInput.indexOf("누구") >= 0 && userInput.indexOf("사람") >= 0)) {
+            for (var j = 0; j < SEJONG_DONGS.length; j++) {
+                if (userInput.indexOf(SEJONG_DONGS[j]) >= 0) {
+                    replier.reply(getMembersByDong(SEJONG_DONGS[j]));
+                    return;
+                }
+            }
+        }
+
+        // 벙개 현황 자연어 (명령 미인식 대비)
+        if (userInput.indexOf("벙개") >= 0 && userInput.indexOf("현황") >= 0) {
+            replier.reply(showBungaeStatus());
+            return;
+        }
+
+        // 오늘 칠 사람 자연어
+        if (userInput.indexOf("칠 사람") >= 0 || userInput.indexOf("칠사람") >= 0 || userInput.indexOf("오늘 모집") >= 0) {
+            // "오늘 모집 현황" 등은 args 유지, 빈 args면 현황
+            var trArgs = args;
+            if (!trArgs && userInput.indexOf("현황") >= 0) trArgs = "현황";
+            if (!trArgs && (userInput.indexOf("취소") >= 0 || userInput.indexOf("불참") >= 0)) trArgs = "취소";
+            replier.reply(todayRecruitCommand(sender, trArgs || (userInput.indexOf("칠") >= 0 ? "현황" : "")));
+            return;
+        }
+
+        // 플랫폼 / 신문 자연어
+        if (userInput.indexOf("플랫폼") >= 0 || userInput.indexOf("홈페이지") >= 0 || userInput.indexOf("사이트 주소") >= 0) {
+            replier.reply(platformCard());
+            return;
+        }
+        if (userInput.indexOf("아침신문") >= 0 || userInput.indexOf("주간 신문") >= 0 || (userInput.indexOf("신문") >= 0 && userInput.indexOf("뉴스") < 0)) {
+            replier.reply(fetchWeeklyDigest());
+            return;
+        }
+        if (userInput.indexOf("충청이음") >= 0) {
+            replier.reply("충청이음\n" + CHUNGCHEONG_EUM_URL);
+            return;
+        }
+
+        if (commands[command]) {
+            commands[command](replier, sender, args, room);
+            return;
+        }
+
+        if (userInput.indexOf("고마워") >= 0 || userInput.indexOf("감사") >= 0) {
+            replier.reply("별말씀을요~ 😊 즐탁하세요!");
+            return;
+        }
+        if (userInput.indexOf("안녕") >= 0 || userInput.indexOf("하이") >= 0 || userInput.indexOf("헬로") >= 0) {
+            replier.reply("안녕하세요! 👋\n'세종 도움말' 또는 궁금한 점을 바로 물어보세요.\n예: 세종 아파트 탁구장 어디가 좋아요?");
+            return;
+        }
+
+        // 알 수 없는 입력 → FAQ → 질문형이면 AI
+        if (userInput.length >= 4) {
+            var faq = tryFaqAnswer(userInput);
+            if (faq) {
+                replier.reply("📌 [빠른 안내]\n\n" + faq);
+                return;
+            }
+            var qLike = (userInput.indexOf("?") >= 0 || userInput.indexOf("？") >= 0 ||
+                userInput.indexOf("어디") >= 0 || userInput.indexOf("어떻게") >= 0 ||
+                userInput.indexOf("뭐") >= 0 || userInput.indexOf("추천") >= 0 ||
+                userInput.indexOf("알려") >= 0 || userInput.indexOf("좋") >= 0 ||
+                userInput.indexOf("방법") >= 0 || userInput.indexOf("언제") >= 0 ||
+                userInput.indexOf("얼마") >= 0 || userInput.indexOf("가능") >= 0 ||
+                userInput.indexOf("인가요") >= 0 || userInput.indexOf("할까요") >= 0);
+            if (qLike) {
+                replier.reply(askGemini(userInput, sender));
+                return;
+            }
+        }
+
+        replier.reply("❓ 잘 못 알아들었어요.\n\n• 도움말: 세종 도움말\n• 질문 예: 세종 아파트 탁구장 어디가 좋아요?\n• FAQ: 세종 faq\n• 플랫폼: 세종 플랫폼\n• 점검: 세종 헬스체크");
+
+    } catch (e) {
+        try { replier.reply("❌ 봇 오류 발생\n" + e); } catch (e2) {}
+    }
+}
+
+// =====================================================
+// ✅ FILE INTEGRITY — 세종이 v16.3.1 전체 끝
+// lines 표시용: response() 닫힘 다음에 이 주석이 있으면 잘리지 않은 것
+// CHECKSUM_MARK: SEJONG_BOT_V1631_COMPLETE_EOF
+// =====================================================

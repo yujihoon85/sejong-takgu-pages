@@ -1,0 +1,68 @@
+// >>> CHAT_PART 9/9 이어서 붙이세요 <<<
+            var trArgs = args;
+            if (!trArgs && userInput.indexOf("현황") >= 0) trArgs = "현황";
+            if (!trArgs && (userInput.indexOf("취소") >= 0 || userInput.indexOf("불참") >= 0)) trArgs = "취소";
+            replier.reply(todayRecruitCommand(sender, trArgs || (userInput.indexOf("칠") >= 0 ? "현황" : "")));
+            return;
+        }
+
+        // 플랫폼 / 신문 자연어
+        if (userInput.indexOf("플랫폼") >= 0 || userInput.indexOf("홈페이지") >= 0 || userInput.indexOf("사이트 주소") >= 0) {
+            replier.reply(platformCard());
+            return;
+        }
+        if (userInput.indexOf("아침신문") >= 0 || userInput.indexOf("주간 신문") >= 0 || (userInput.indexOf("신문") >= 0 && userInput.indexOf("뉴스") < 0)) {
+            replier.reply(fetchWeeklyDigest());
+            return;
+        }
+        if (userInput.indexOf("충청이음") >= 0) {
+            replier.reply("충청이음\n" + CHUNGCHEONG_EUM_URL);
+            return;
+        }
+
+        if (commands[command]) {
+            commands[command](replier, sender, args, room);
+            return;
+        }
+
+        if (userInput.indexOf("고마워") >= 0 || userInput.indexOf("감사") >= 0) {
+            replier.reply("별말씀을요~ 😊 즐탁하세요!");
+            return;
+        }
+        if (userInput.indexOf("안녕") >= 0 || userInput.indexOf("하이") >= 0 || userInput.indexOf("헬로") >= 0) {
+            replier.reply("안녕하세요! 👋\n'세종 도움말' 또는 궁금한 점을 바로 물어보세요.\n예: 세종 아파트 탁구장 어디가 좋아요?");
+            return;
+        }
+
+        // 알 수 없는 입력 → FAQ → 질문형이면 AI
+        if (userInput.length >= 4) {
+            var faq = tryFaqAnswer(userInput);
+            if (faq) {
+                replier.reply("📌 [빠른 안내]\n\n" + faq);
+                return;
+            }
+            var qLike = (userInput.indexOf("?") >= 0 || userInput.indexOf("？") >= 0 ||
+                userInput.indexOf("어디") >= 0 || userInput.indexOf("어떻게") >= 0 ||
+                userInput.indexOf("뭐") >= 0 || userInput.indexOf("추천") >= 0 ||
+                userInput.indexOf("알려") >= 0 || userInput.indexOf("좋") >= 0 ||
+                userInput.indexOf("방법") >= 0 || userInput.indexOf("언제") >= 0 ||
+                userInput.indexOf("얼마") >= 0 || userInput.indexOf("가능") >= 0 ||
+                userInput.indexOf("인가요") >= 0 || userInput.indexOf("할까요") >= 0);
+            if (qLike) {
+                replier.reply(askGemini(userInput, sender));
+                return;
+            }
+        }
+
+        replier.reply("❓ 잘 못 알아들었어요.\n\n• 도움말: 세종 도움말\n• 질문 예: 세종 아파트 탁구장 어디가 좋아요?\n• FAQ: 세종 faq\n• 플랫폼: 세종 플랫폼\n• 점검: 세종 헬스체크");
+
+    } catch (e) {
+        try { replier.reply("❌ 봇 오류 발생\n" + e); } catch (e2) {}
+    }
+}
+
+// =====================================================
+// ✅ FILE INTEGRITY — 세종이 v16.3.1 전체 끝
+// lines 표시용: response() 닫힘 다음에 이 주석이 있으면 잘리지 않은 것
+// CHECKSUM_MARK: SEJONG_BOT_V1631_COMPLETE_EOF
+// =====================================================

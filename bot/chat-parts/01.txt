@@ -1,0 +1,401 @@
+// >>> CHAT_PART 1/9 이어서 붙이세요 <<<
+/**
+ * 🏓 세종 탁구 커뮤니티 챗봇 v16.3.1 COMMUNITY OS
+ *
+ * msgbot / 메신저봇R 단일 파일 전체 통합본
+ * ★ 폰 메신저봇R에 이 파일 전체 붙여넣기 → 저장 → 재컴파일
+ *
+ * v16.2 → v16.3 (다음 스텝 1~5)
+ * ─────────────────────────────────────────────
+ * [1] 안정화: KST 시간·헬스체크·에러 힌트
+ * [2] 웹 연동: 플랫폼/카톡/충청이음, GAS 오늘모집 동기화
+ * [3] 모집·매칭: 예약 링크·매칭 가이드
+ * [4] 데이터: 이웃 중복 병합, 관리자 치트시트
+ * [5] 주간: 세종 신문 (GAS weekly)
+ * [16.3.1] 두 단어 명령 합침: "벙개 현황"→벙개현황, "오늘 모집"→오늘모집 등
+ * ─────────────────────────────────────────────
+ */
+
+// =====================================================
+// 🆔 버전
+// =====================================================
+
+var BOT_VERSION = "16.3.1 COMMUNITY OS";
+
+// =====================================================
+// ⚙️ 기본 설정
+// =====================================================
+
+var TRIGGER = "세종";
+var BOT_NAME = "세종이";
+var WEATHER_CITY = "Sejong";
+var BAND_URL = "https://band.us/band/63502525";
+var PLATFORM_URL = "https://sejong-takgu.pages.dev/";
+var PLATFORM_PREVIEW_URL = "https://40fe635f.sejong-takgu.pages.dev/";
+var KAKAO_OPENCHAT_URL = "https://open.kakao.com/o/g51E976e";
+var CHUNGCHEONG_EUM_URL = "https://fragrant-night-c185.pages.dev/";
+var BOOKING_URL = "https://onestop.sejong.go.kr";
+
+var ADMINS = [
+    "음악시간미술시간",
+    "음악시간미술시간😊",
+    "유지훈",
+    "박범근"
+];
+
+var SPAM_LIMIT = 3;
+var SPAM_WINDOW = 5000;
+
+var ELO_K = 32;
+var PENDING_WIN_TIMEOUT = 300000; // 5분
+
+// v16: Gemini 모델명 (자동 최신 유지 별칭)
+var GEMINI_MODEL = "gemini-flash-latest";
+
+// =====================================================
+// 📂 파일 경로
+// =====================================================
+
+var DATA_DIR = "/sdcard/msgbot/세종/";
+
+var FILE_CONFIG = DATA_DIR + "config.json";
+var FILE_USERS = DATA_DIR + "users.json";
+var FILE_ADMINS = DATA_DIR + "admins.json";
+var FILE_BLOCKED = DATA_DIR + "blocked.json";
+var FILE_SPAM = DATA_DIR + "spam.json";
+var FILE_STATS = DATA_DIR + "stats.json";
+
+var FILE_MATCH = DATA_DIR + "match.json";
+
+var FILE_BUNGGAE = DATA_DIR + "bunggae.json";
+var FILE_ATTEND = DATA_DIR + "attend.json";
+var FILE_POINT = DATA_DIR + "point.json";
+var FILE_STREAK = DATA_DIR + "streak.json";
+
+var FILE_ELO = DATA_DIR + "elo.json";
+var FILE_PENDING_WINS = DATA_DIR + "pending_wins.json";
+var FILE_MATCHES_HISTORY = DATA_DIR + "matches_history.json";
+
+var FILE_RESERVATIONS = DATA_DIR + "reservations.json";
+var FILE_DAILY_AWARDS = DATA_DIR + "daily_awards.json";
+var FILE_REACT_AGENT = DATA_DIR + "react_agent.json";
+var FILE_PREDICTIONS = DATA_DIR + "predictions.json";
+
+// v16.1: 주간 랭킹 스냅샷 (지난주 순위 비교용)
+var FILE_WEEKLY_RANK = DATA_DIR + "weekly_rank.json";
+
+// 백업 디렉터리
+var BACKUP_DIR = DATA_DIR + "backup/";
+
+// =====================================================
+// 🔑 API
+// =====================================================
+
+var GEMINI_API_KEY = "";
+
+// =====================================================
+// 🌐 GAS 연동 (방인원 + 대화로그) — v16.2 정식 통합
+// =====================================================
+
+var GAS_URL = "https://script.google.com/macros/s/AKfycbxCvR-8Sbk3e7UJzQ4zc6CVDbKbKLEqvKdMmy5TD-CCqVK019eHytT45tlRP1uaXlrT/exec";
+// 방 이름에 이 글자가 포함되면 대화 로그 전송
+var TARGET_ROOM = "세종";
+
+var SEJONG_DONGS = [
+    "종촌동", "집현동", "고운동", "나성동", "새롬동", "도담동",
+    "보람동", "한솔동", "소담동", "아름동", "어진동", "다정동",
+    "반곡동", "대평동", "산울동", "해밀동", "합강동"
+];
+
+function sendToSheet(room, sender, msg) {
+    try {
+        if (TARGET_ROOM && String(room).indexOf(TARGET_ROOM) === -1) return;
+        if (!GAS_URL || GAS_URL.indexOf("http") !== 0) return;
+        var t = String(msg || "").trim();
+        if (!t) return;
+        var mediaPrefixes = ["사진", "동영상", "이모티콘", "스티커", "음성메시지", "파일", "지도", "연락처", "메시지가 삭제되었습니다", "삭제된 메시지", "투표", "앨범"];
+        for (var i = 0; i < mediaPrefixes.length; i++) {
+            if (t.indexOf(mediaPrefixes[i]) === 0) return;
+        }
+        var payload = JSON.stringify({ action: "chat", room: room, n: sender, m: t.slice(0, 500) });
+        new java.lang.Thread({
+            run: function () {
+                try {
+                    org.jsoup.Jsoup.connect(GAS_URL)
+                        .ignoreContentType(true)
+                        .ignoreHttpErrors(true)
+                        .followRedirects(true)
+                        .timeout(5000)
+                        .header("Content-Type", "text/plain;charset=utf-8")
+                        .requestBody(payload)
+                        .post();
+                } catch (e) {}
+            }
+        }).start();
+    } catch (e) {}
+}
+
+function getRoomCount(roomName) {
+    try {
+        if (!roomName) return "💡 사용법: 세종 인원 종촌동";
+        var url = GAS_URL + "?action=roomCount&room=" + encodeURIComponent(roomName);
+        var res = org.jsoup.Jsoup.connect(url)
+            .ignoreContentType(true)
+            .timeout(8000)
+            .get()
+            .text();
+        var json = JSON.parse(res);
+        if (json.error) {
+            return "❌ " + roomName + " 방 정보가 아직 없어요.\n관리자가 먼저 등록: 세종 인원 " + roomName + " 20";
+        }
+        return "🏓 " + json.room + " 현재 " + json.count + "명이에요!\n📅 마지막 업데이트: " + formatKst(json.updated || "최근");
+    } catch (e) {
+        return "⚠️ " + roomName + " 인원 조회에 실패했어요. 잠시 후 다시 시도해 주세요.";
+    }
+}
+
+function updateRoomCount(roomName, count, sender) {
+    if (!isAdmin(sender)) return "🚫 인원 숫자 변경은 관리자만 가능해요 😅";
+    try {
+        var payload = JSON.stringify({
+            action: "updateRoom",
+            room: roomName,
+            count: Number(count),
+            note: sender + "님이 업데이트"
+        });
+        org.jsoup.Jsoup.connect(GAS_URL)
+            .ignoreContentType(true)
+            .header("Content-Type", "application/json")
+            .requestBody(payload)
+            .method(org.jsoup.Connection.Method.POST)
+            .timeout(8000)
+            .execute();
+        return "✅ " + roomName + " 인원을 " + count + "명으로 업데이트했어요!";
+    } catch (e) {
+        return "❌ 업데이트 실패. GAS 배포 상태를 확인해 주세요.";
+    }
+}
+
+function getMembersByDong(dongName) {
+    try {
+        if (!dongName) return "💡 사용법: 세종 이웃 집현동\n예: 세종 이웃 고운동";
+        dongName = normalizeName(dongName);
+        var users = loadJSON(FILE_USERS, {});
+        var found = [];
+        for (var key in users) {
+            if (key === "__initialized__" || key === "__nextId__" || key === "__botVersion__") continue;
+            var user = users[key];
+            if (!user) continue;
+            var region = user.region || "";
+            var fullName = user.fullName || key;
+            var shortName = user.shortName || getShortName(fullName);
+            if (region.indexOf(dongName) >= 0 || fullName.indexOf(dongName) >= 0 || String(key).indexOf(dongName) >= 0) {
+                var rank = user.rank || "";
+                try { if (!rank) rank = extractRank(fullName); } catch (e) {}
+                found.push(shortName + (rank ? " (" + rank + ")" : ""));
+            }
+        }
+        var byBase = {};
+        var order = [];
+        for (var i = 0; i < found.length; i++) {
+            var line = found[i];
+            var base = line.replace(/\s*\([^)]*\)\s*$/, "").trim();
+            var rankPart = "";
+            var rm = line.match(/\(([^)]*)\)\s*$/);
+            if (rm) rankPart = rm[1];
+            if (!byBase[base]) { byBase[base] = []; order.push(base); }
+            if (rankPart && byBase[base].indexOf(rankPart) < 0) byBase[base].push(rankPart);
+        }
+        var uniq = [];
+        for (var u = 0; u < order.length; u++) {
+            var b = order[u];
+            var ranks = byBase[b];
+            if (!ranks.length) uniq.push(b);
+            else if (ranks.length === 1) uniq.push(b + " (" + ranks[0] + ")");
+            else uniq.push(b + " (" + ranks.join(" · ") + ")");
+        }
+        found = uniq;
+        if (found.length === 0) {
+            return "📭 " + dongName + " 회원이 아직 DB에 없어요.\n(봇과 대화한 적 있는 사람 기준)";
+        }
+        var msg = "🏘️ " + dongName + " 이웃 " + found.length + "명\n\n";
+        for (var j = 0; j < found.length && j < 30; j++) msg += (j + 1) + ". " + found[j] + "\n";
+        if (found.length > 30) msg += "\n외 " + (found.length - 30) + "명 더 있음";
+        msg += "\n\n※ 봇과 대화한 적 있는 사람 기준입니다.";
+        return msg;
+    } catch (e) {
+        return "⚠️ 회원 검색 중 오류가 발생했어요.";
+    }
+}
+
+
+
+// =====================================================
+// 🌐 v16.3 웹·시간·GAS 헬퍼
+// =====================================================
+
+function formatKst(v) {
+    try {
+        if (!v || v === "최근") return "최근";
+        var d = (v instanceof Date) ? v : new Date(v);
+        if (isNaN(d.getTime())) return String(v).slice(0, 22);
+        var y = d.getFullYear();
+        var mo = d.getMonth() + 1;
+        var day = d.getDate();
+        var h = d.getHours();
+        var mi = d.getMinutes();
+        var ap = h < 12 ? "오전" : "오후";
+        var h12 = h % 12; if (h12 === 0) h12 = 12;
+        var mm = (mi < 10 ? "0" : "") + mi;
+        return y + "." + mo + "." + day + " " + ap + " " + h12 + ":" + mm;
+    } catch (e) {
+        return String(v || "최근");
+    }
+}
+
+function platformCard() {
+    return "━━━ 🌐 세종 탁구 플랫폼 ━━━\n\n" +
+           "공식\n" + PLATFORM_URL + "\n\n" +
+           "포함 기능\n" +
+           "· 실시간 동별 인원 카드\n" +
+           "· 동네 코트 지도\n" +
+           "· 배움터 · 라운지 · 아침신문\n" +
+           "· 탁구 게임 (즐탁 테트리스)\n\n" +
+           "카톡 오픈채팅\n" + KAKAO_OPENCHAT_URL + "\n\n" +
+           "충청이음\n" + CHUNGCHEONG_EUM_URL + "\n\n" +
+           "복컴 예약\n" + BOOKING_URL;
+}
+
+function gasGet(action, extraQuery) {
+    var url = GAS_URL + "?action=" + encodeURIComponent(action);
+    if (extraQuery) url += "&" + extraQuery;
+    var res = org.jsoup.Jsoup.connect(url)
+        .ignoreContentType(true)
+        .timeout(9000)
+        .get()
+        .text();
+    return JSON.parse(res);
+}
+
+function gasPost(payloadObj) {
+    org.jsoup.Jsoup.connect(GAS_URL)
+        .ignoreContentType(true)
+        .ignoreHttpErrors(true)
+        .header("Content-Type", "application/json")
+        .requestBody(JSON.stringify(payloadObj))
+        .method(org.jsoup.Connection.Method.POST)
+        .timeout(9000)
+        .execute();
+}
+
+function syncTodayRecruitToGas(data, sender) {
+    try {
+        if (!GAS_URL || GAS_URL.indexOf("http") !== 0) return;
+        var payload = {
+            action: "todayRecruit",
+            date: data.date || "",
+            place: data.place || "",
+            time: data.time || "",
+            host: data.host || "",
+            members: data.members || [],
+            note: (sender || "") + " / 세종이"
+        };
+        new java.lang.Thread({
+            run: function () {
+                try { gasPost(payload); } catch (e) {}
+            }
+        }).start();
+    } catch (e) {}
+}
+
+function fetchWeeklyDigest() {
+    try {
+        var json = gasGet("weekly");
+        if (!json || json.error) return "📭 주간 데이터가 아직 없어요.\n월요일 자동 분석 후 채워집니다.\n웹: " + PLATFORM_URL;
+        var data = json.data || json;
+        if (typeof data === "string") {
+            try { data = JSON.parse(data); } catch (e2) {}
+        }
+        var kw = data.kw || data.keywords || [];
+        var rank = data.rank || data.ranking || [];
+        var news = data.news || data.summary || "";
+        var msg = "━━━ 📰 AI 아침신문·주간 ━━━\n\n";
+        if (news) {
+            if (typeof news === "string") msg += news + "\n\n";
+            else msg += (news.title ? news.title + "\n" : "") + (news.body || news.summary || JSON.stringify(news).slice(0, 300)) + "\n\n";
+        }
+        if (kw && kw.length) {
+            msg += "🔑 키워드\n";
+            for (var i = 0; i < kw.length && i < 8; i++) {
+                msg += "· " + (typeof kw[i] === "string" ? kw[i] : (kw[i].word || kw[i].name || "?")) + "\n";
+            }
+            msg += "\n";
+        }
+        if (rank && rank.length) {
+            msg += "🏆 주간 활성\n";
+            for (var r = 0; r < rank.length && r < 5; r++) {
+                var item = rank[r];
+                if (typeof item === "string") msg += (r + 1) + ". " + item + "\n";
+                else msg += (r + 1) + ". " + (item.name || item.n || "?") + (item.score != null ? " · " + item.score : "") + "\n";
+            }
+            msg += "\n";
+        }
+        if (!news && !(kw && kw.length) && !(rank && rank.length)) {
+            msg += "시트 주간 데이터가 비어 있어요.\n";
+        }
+        msg += "웹: " + PLATFORM_URL;
+        return msg;
+    } catch (e) {
+        return "⚠️ 주간 신문 조회 실패\n· 세종 헬스체크\n· 웹: " + PLATFORM_URL;
+    }
+}
+
+function healthCheck() {
+    var lines = [];
+    lines.push("━━━ 🩺 세종이 헬스체크 ━━━");
+    lines.push("버전: " + BOT_VERSION);
+    lines.push("모델: " + GEMINI_MODEL);
+    var hasKey = false;
+    try {
+        if (GEMINI_API_KEY && String(GEMINI_API_KEY).indexOf("AIza") === 0) hasKey = true;
+        else {
+            var cfg = loadJSON(FILE_CONFIG, {});
+            if (cfg && cfg.geminiKey && String(cfg.geminiKey).indexOf("AIza") === 0) hasKey = true;
+        }
+    } catch (e) {}
+    // also try common getter if exists
+    try { if (typeof getAPIKey === "function" && getAPIKey()) hasKey = true; } catch (e2) {}
+    try { if (typeof loadAPIKey === "function" && loadAPIKey()) hasKey = true; } catch (e3) {}
+    lines.push("Gemini API: " + (hasKey ? "✅ 설정됨" : "❌ 없음 (세종 API설정)"));
+    try {
+        var rooms = gasGet("rooms");
+        var n = (rooms && rooms.rooms) ? rooms.rooms.length : 0;
+        lines.push("GAS 방인원: ✅ " + n + "개 동");
+    } catch (e) {
+        lines.push("GAS 방인원: ⚠️ 연결 실패");
+    }
+    lines.push("플랫폼: " + PLATFORM_URL);
+    lines.push("\n추천 테스트");
+    lines.push("· 세종 AI테스트");
+    lines.push("· 세종 인원 종촌동");
+    lines.push("· 세종 오늘모집 현황");
+    lines.push("· 세종 신문");
+    return lines.join("\n");
+}
+
+function matchGuide() {
+    return "━━━ 🎯 매칭 가이드 ━━━\n\n" +
+           "1) 참가: 세종 매칭\n" +
+           "2) 목록: 세종 매칭목록\n" +
+           "3) 단식 편성: 세종 매칭시작\n" +
+           "4) 복식 편성: 세종 복식\n\n" +
+           "팁\n· 닉네임에 부수(8부 등) 있으면 매칭↑\n· 오늘만: 세종 오늘모집 새롬복컴 19시\n· 예약: " + BOOKING_URL;
+}
+
+// =====================================================
+// 🏆 일일 벙개 상장 설정
+// =====================================================
+
+var AWARD_TRIGGER_HOUR = 21;      // 매일 밤 9시
+var AWARD_LOG_LIMIT = 500;
+var AWARD_HISTORY_LIMIT = 30;

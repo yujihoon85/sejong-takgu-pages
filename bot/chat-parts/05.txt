@@ -1,0 +1,401 @@
+// >>> CHAT_PART 5/9 이어서 붙이세요 <<<
+
+    var bonus = Math.min(newStreak - 1, 5);
+    points = 10 + bonus;
+
+    var totalPts = 0;
+    updateJSON(FILE_POINT, {}, function(p) {
+        if (!p[name]) p[name] = 0;
+        p[name] += points;
+        totalPts = p[name];
+        return p;
+    });
+
+    incrementStat("attendances");
+    addAwardLog("출석", sender, "출석 완료 " + newStreak + "일 연속");
+
+    var msg = "✅ 출석 완료! (+" + points + "P)\n\n" +
+              "💰 총 포인트: " + totalPts + "P\n🔥 연속 출석: " + newStreak + "일";
+    if (newStreak >= 7) msg += "\n🎉 일주일 연속!";
+    if (newStreak >= 30) msg += "\n👑 한 달 연속!";
+    return msg;
+}
+
+function showPoint(sender) {
+    var pData = loadJSON(FILE_POINT, {});
+    var sData = loadJSON(FILE_STREAK, {});
+    var name = getShortName(sender);
+    return "💰 " + name + "님의 포인트\n\n포인트: " + (pData[name] || 0) + "P\n연속출석: " + (sData[name] || 0) + "일";
+}
+
+// v16.1: 내 정보 카드 — 등급·ELO·전적·연속출석·포인트를 한 장에
+function showMyCard(sender) {
+    var name = getShortName(sender);
+    var user = updateMemberDB(sender);
+
+    var rank = (user && user.rank) ? user.rank : "미분류";
+    var region = (user && user.region) ? user.region : "미분류";
+
+    var elo = getElo(name);
+
+    // 전적 계산
+    var history = loadJSON(FILE_MATCHES_HISTORY, []);
+    var win = 0;
+    var lose = 0;
+    for (var i = 0; i < history.length; i++) {
+        if (history[i].winner === name) win++;
+        else if (history[i].loser === name) lose++;
+    }
+    var total = win + lose;
+    var rate = total === 0 ? 0 : Math.round((win / total) * 100);
+
+    var point = loadJSON(FILE_POINT, {})[name] || 0;
+    var streak = loadJSON(FILE_STREAK, {})[name] || 0;
+
+    // 포인트 랭킹 내 순위
+    var pData = loadJSON(FILE_POINT, {});
+    var pArr = [];
+    for (var u in pData) pArr.push({ name: u, points: pData[u] });
+    pArr.sort(function(a, b) { return b.points - a.points; });
+    var myRank = 0;
+    for (var j = 0; j < pArr.length; j++) {
+        if (pArr[j].name === name) { myRank = j + 1; break; }
+    }
+
+    var msg = "━━━ 🪪 내 정보 카드 ━━━\n\n" +
+              "👤 " + name + "\n" +
+              "📍 " + region + " / " + rank + "\n\n" +
+              "🏓 ELO: " + elo + "\n" +
+              "🥇 전적: " + win + "승 " + lose + "패";
+    if (total > 0) msg += " (승률 " + rate + "%)";
+    msg += "\n🔥 연속출석: " + streak + "일\n" +
+           "💰 포인트: " + point + "P";
+    if (myRank > 0) msg += " (포인트 " + myRank + "위)";
+    msg += "\n\n💪 오늘도 즐탁하세요!";
+    return msg;
+}
+
+// v16.1: 오늘의 탁구 팁 (AI 있으면 AI, 없으면 내장 목록 랜덤)
+function getTableTennisTip() {
+    loadAPIKey();
+
+    if (GEMINI_API_KEY && GEMINI_API_KEY !== "") {
+        var prompt =
+            "당신은 세종시 탁구 커뮤니티의 친절한 코치입니다.\n" +
+            "40~60대 생활체육 탁구인에게 도움이 되는 '오늘의 탁구 팁'을 딱 하나만 알려주세요.\n" +
+            "조건:\n- 2~3문장, 100자 이내로 짧게.\n- 초보자도 바로 이해하고 실천할 수 있게.\n" +
+            "- 어려운 전문용어 대신 쉬운 말로.\n- 부상 예방, 기본기, 전략 중 하나.\n" +
+            "- 팁 내용만 출력하세요. 인사말이나 서론 없이.";
+        var aiTip = callGeminiText(prompt);
+        if (aiTip) {
+            return "━━━ 💡 오늘의 탁구 팁 ━━━\n\n" + aiTip + "\n\n🏓 세종이 코치 드림";
+        }
+    }
+
+    // AI 실패/미설정 시 내장 목록에서
+    var tip = TABLE_TENNIS_TIPS[Math.floor(Math.random() * TABLE_TENNIS_TIPS.length)];
+    return "━━━ 💡 오늘의 탁구 팁 ━━━\n\n" + tip + "\n\n🏓 세종이 코치 드림";
+}
+
+// v16.1: 지난주 순위 스냅샷 로드 → { 이름: 지난주순위 }
+function getLastWeekRankMap() {
+    var snap = loadJSON(FILE_WEEKLY_RANK, { weekKey: "", ranks: {} });
+    return snap.ranks || {};
+}
+
+// v16.1: 이번 주 순위를 스냅샷으로 저장 (주가 바뀌었을 때만)
+function saveWeeklyRankSnapshotIfNewWeek() {
+    var thisWeek = getWeekKey();
+    updateJSON(FILE_WEEKLY_RANK, { weekKey: "", ranks: {} }, function(snap) {
+        if (snap.weekKey === thisWeek) return undefined; // 이번 주 이미 저장됨
+
+        var pData = loadJSON(FILE_POINT, {});
+        var arr = [];
+        for (var u in pData) arr.push({ name: u, points: pData[u] });
+        arr.sort(function(a, b) { return b.points - a.points; });
+
+        var ranks = {};
+        for (var i = 0; i < arr.length; i++) {
+            ranks[arr[i].name] = i + 1;
+        }
+
+        snap.weekKey = thisWeek;
+        snap.ranks = ranks;
+        return snap;
+    });
+}
+
+// v16.1: 순위 변동 화살표 (지난주 대비)
+function rankChangeArrow(name, currentRank, lastWeekMap) {
+    if (typeof lastWeekMap[name] === "undefined") {
+        return " 🆕";
+    }
+    var prev = lastWeekMap[name];
+    var diff = prev - currentRank; // 양수면 순위 상승
+    if (diff > 0) return " ▲" + diff;
+    if (diff < 0) return " ▼" + (-diff);
+    return " -";
+}
+
+function showRanking() {
+    var pData = loadJSON(FILE_POINT, {});
+    var sData = loadJSON(FILE_STREAK, {});
+    var arr = [];
+
+    for (var user in pData) {
+        arr.push({ name: user, points: pData[user], streak: sData[user] || 0 });
+    }
+
+    arr.sort(function(a, b) { return b.points - a.points; });
+    if (arr.length === 0) return "🏆 아직 랭킹 데이터가 없어요.";
+
+    var lastWeekMap = getLastWeekRankMap();
+    var hasLastWeek = false;
+    for (var kk in lastWeekMap) { hasLastWeek = true; break; }
+
+    var result = "━━━ 🏆 포인트 랭킹 TOP 10 ━━━\n\n";
+    for (var i = 0; i < Math.min(10, arr.length); i++) {
+        var medal = (i === 0) ? "🥇" : (i === 1) ? "🥈" : (i === 2) ? "🥉" : (i + 1) + "위";
+        result += medal + " " + arr[i].name + ": " + arr[i].points + "P";
+        if (arr[i].streak >= 7) result += " 🔥" + arr[i].streak;
+        if (hasLastWeek) result += rankChangeArrow(arr[i].name, i + 1, lastWeekMap);
+        result += "\n";
+    }
+
+    if (hasLastWeek) {
+        result += "\n(▲▼ = 지난주 대비, 🆕 = 신규)";
+    }
+    return result;
+}
+
+// =====================================================
+// 🧠 ELO / 승패 승인제 (동시성 보호)
+// =====================================================
+
+function getElo(name) {
+    var data = loadJSON(FILE_ELO, {});
+    if (typeof data[name] === "undefined") {
+        updateJSON(FILE_ELO, {}, function(d) {
+            if (typeof d[name] === "undefined") { d[name] = 1000; return d; }
+            return undefined;
+        });
+        return 1000;
+    }
+    return data[name];
+}
+
+function setElo(name, score) {
+    updateJSON(FILE_ELO, {}, function(data) {
+        data[name] = score;
+        return data;
+    });
+}
+
+function requestWin(sender, args) {
+    args = normalizeName(args);
+    if (!args) return "💡 사용법\n세종 승리 [패자]\n또는 관리자: 세종 승리 [승자] [패자]";
+
+    var parts = args.split(/\s+/);
+    var reporter = getShortName(sender);
+    var winner = "";
+    var loser = "";
+
+    if (parts.length === 1) {
+        winner = reporter;
+        loser = parts[0];
+    } else {
+        winner = parts[0];
+        loser = parts[1];
+        if (!isAdmin(sender) && reporter !== winner) {
+            return "🚫 본인 승리만 신고할 수 있어요.\n관리자는 승자/패자 지정 가능.";
+        }
+    }
+
+    if (winner === loser) return "❌ 승자와 패자가 같을 수 없어요.";
+
+    updateJSON(FILE_PENDING_WINS, {}, function(pending) {
+        pending[loser] = { winner: winner, loser: loser, requester: reporter, time: new Date().getTime() };
+        return pending;
+    });
+
+    return "📨 경기 결과 승인 요청\n\n🥇 승자: " + winner + "\n🥈 패자: " + loser +
+           "\n\n" + loser + "님이 5분 내\n'세종 확인' 입력하면 반영됩니다.";
+}
+
+function confirmWin(sender) {
+    var name = getShortName(sender);
+    var game = null;
+    var expired = false;
+
+    updateJSON(FILE_PENDING_WINS, {}, function(pending) {
+        if (!pending[name]) return undefined;
+        var g = pending[name];
+        var now = new Date().getTime();
+        if (now - g.time > PENDING_WIN_TIMEOUT) {
+            delete pending[name];
+            expired = true;
+            return pending;
+        }
+        game = g;
+        delete pending[name];
+        return pending;
+    });
+
+    if (expired) return "⌛ 승인 시간이 지나 취소됐어요.";
+    if (!game) return "❌ 승인 대기 중인 경기 결과가 없어요.";
+
+    var winner = game.winner;
+    var loser = game.loser;
+    var wOld = getElo(winner);
+    var lOld = getElo(loser);
+
+    var expectedW = 1 / (1 + Math.pow(10, (lOld - wOld) / 400));
+    var expectedL = 1 / (1 + Math.pow(10, (wOld - lOld) / 400));
+    var wNew = Math.round(wOld + ELO_K * (1 - expectedW));
+    var lNew = Math.round(lOld + ELO_K * (0 - expectedL));
+
+    setElo(winner, wNew);
+    setElo(loser, lNew);
+
+    updateJSON(FILE_MATCHES_HISTORY, [], function(history) {
+        history.push({
+            winner: winner, loser: loser,
+            winnerOld: wOld, loserOld: lOld,
+            winnerNew: wNew, loserNew: lNew,
+            date: getTodayKey()
+        });
+        return history;
+    });
+
+    incrementStat("elo_matches");
+    addAwardLog("경기결과", winner, winner + " 승리 / " + loser + " 패배");
+
+    var predictionSettleMsg = settlePredictionIfMatch(winner, loser);
+
+    return "🏓 경기 결과 반영 완료!\n\n🥇 " + winner + ": " + wOld + " → " + wNew +
+           "\n🥈 " + loser + ": " + lOld + " → " + lNew + predictionSettleMsg;
+}
+
+function showRecord(name) {
+    name = normalizeName(name);
+    if (!name) return "💡 사용법: 세종 전적 [이름]";
+
+    var history = loadJSON(FILE_MATCHES_HISTORY, []);
+    var win = 0;
+    var lose = 0;
+
+    for (var i = 0; i < history.length; i++) {
+        var m = history[i];
+        if (m.winner === name) win++;
+        else if (m.loser === name) lose++;
+    }
+
+    var total = win + lose;
+    var rate = total === 0 ? 0 : Math.round((win / total) * 100);
+    var elo = getElo(name);
+
+    return "📊 " + name + " 전적\n\n🏓 ELO: " + elo + "\n🥇 승: " + win +
+           "\n🥈 패: " + lose + "\n📈 승률: " + rate + "%";
+}
+
+function showEloRanking() {
+    var data = loadJSON(FILE_ELO, {});
+    var arr = [];
+    for (var name in data) {
+        arr.push({ name: name, elo: data[name] });
+    }
+    arr.sort(function(a, b) { return b.elo - a.elo; });
+    if (arr.length === 0) return "🏓 ELO 데이터가 아직 없어요.";
+
+    var msg = "━━━ 🏓 ELO 랭킹 TOP 10 ━━━\n\n";
+    for (var i = 0; i < arr.length && i < 10; i++) {
+        var medal = (i === 0) ? "🥇" : (i === 1) ? "🥈" : (i === 2) ? "🥉" : (i + 1) + "위";
+        msg += medal + " " + arr[i].name + ": " + arr[i].elo + "\n";
+    }
+    return msg;
+}
+
+// =====================================================
+// 📅 예약
+// =====================================================
+
+function addReservation(sender, args) {
+    var parts = args ? args.split(/\s+/) : [];
+    if (parts.length < 2) return "💡 사용법\n세종 예약 [장소] [시간]\n예: 세종 예약 새롬복컴 19시";
+
+    var name = getShortName(sender);
+    updateJSON(FILE_RESERVATIONS, [], function(data) {
+        data.push({ user: name, place: parts[0], time: parts[1], date: getTodayKey() });
+        return data;
+    });
+
+    incrementStat("reservations");
+    addAwardLog("예약", sender, "예약 등록: " + parts[0] + " " + parts[1]);
+
+    return "📅 예약 등록 완료\n\n📍 장소: " + parts[0] + "\n🕒 시간: " + parts[1] + "\n👤 등록: " + name;
+}
+
+function showReservations() {
+    var data = loadJSON(FILE_RESERVATIONS, []);
+    if (data.length === 0) return "📭 예약 내역이 없어요.";
+
+    var msg = "━━━ 📅 예약 현황 ━━━\n\n";
+    for (var i = 0; i < data.length; i++) {
+        msg += (i + 1) + ". " + data[i].place + " / " + data[i].time + " / " + data[i].user + "\n";
+    }
+    return msg;
+}
+
+function clearReservations(sender) {
+    if (!isAdmin(sender)) return "🚫 관리자 전용 명령어입니다.";
+    saveJSON(FILE_RESERVATIONS, []);
+    return "🗑️ 예약 목록 초기화 완료";
+}
+
+// =====================================================
+// 🤖 조용한 ReAct 감정 에이전트
+// =====================================================
+
+function loadReactAgentData() {
+    return loadJSON(FILE_REACT_AGENT, { lastGlobal: 0, userLast: {}, dayKey: "", dayCount: 0 });
+}
+
+function saveReactAgentData(data) {
+    saveJSON(FILE_REACT_AGENT, data);
+}
+
+function isProbablyMediaMessage(msg) {
+    var t = String(msg || "").trim();
+    var mediaPrefixes = [
+        "사진", "사진:", "동영상", "동영상:", "이모티콘", "스티커",
+        "음성메시지", "파일", "지도", "연락처", "메시지가 삭제되었습니다",
+        "삭제된 메시지", "투표", "앨범"
+    ];
+    for (var i = 0; i < mediaPrefixes.length; i++) {
+        if (t.indexOf(mediaPrefixes[i]) === 0) return true;
+    }
+    return false;
+}
+
+function isSensitiveReactContext(msg) {
+    var t = String(msg || "").toLowerCase();
+    var sensitive = [
+        "선거", "투표", "정치", "대통령", "국회의원", "시장", "도지사",
+        "정당", "민주당", "국민의힘", "후보", "부정선거", "시위", "전쟁",
+        "사망", "사고", "범죄", "고소", "신고"
+    ];
+    for (var i = 0; i < sensitive.length; i++) {
+        if (t.indexOf(sensitive[i].toLowerCase()) >= 0) return true;
+    }
+    return false;
+}
+
+function isTinyReactionOnly(msg) {
+    var t = String(msg || "").replace(/\s+/g, "").trim();
+    if (t.length <= 2) return true;
+    if (/^[ㅋㅎㅠㅜㅡ~!.?]+$/.test(t)) return true;
+    if (/^[👍👏🙌🙏😂🤣😅😊😉😍😆🔥✨❤️💙💚]+$/.test(t)) return true;
+    return false;
+}
+
+function hasTableTennisContext(msg) {
