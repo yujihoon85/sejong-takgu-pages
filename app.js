@@ -997,6 +997,7 @@
   }
 
   // boot
+  try { initBgmUi(); } catch (e) {}
   loadLivingGraph().then(function () {
     wireSisterLinks();
     wireYouTubePractice();
@@ -1006,6 +1007,9 @@
     loadRooms();
     loadWeekly();
     setInterval(loadRooms, 5 * 60 * 1000);
+    setTimeout(function () {
+      try { initHomeMap(); } catch (e2) {}
+    }, 150);
   });
 })();
 
