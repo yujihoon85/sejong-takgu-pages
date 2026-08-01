@@ -396,29 +396,33 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 @media(min-width:720px){
   .play-canvas-wrap{aspect-ratio:4/3;max-height:min(70vh,560px)}
 }
-/* 즐탁 테트리스 — 약 3배 큰 보드 */
+/* 즐탁 테트리스 — 초대형 (이전 대비 ~2배) */
 .play-canvas-wrap.tetris-xl{
   aspect-ratio:10/18;
   width:100%;
-  max-width:min(100vw - 24px, 560px);
-  max-height:min(92vh, 980px);
+  max-width:min(100vw - 8px, 980px);
+  max-height:min(96vh, 1400px);
   margin:0 auto;
   border-radius:0;
 }
 @media(min-width:720px){
   .play-canvas-wrap.tetris-xl{
-    max-width:min(96vw, 720px);
-    max-height:min(92vh, 1100px);
-    aspect-ratio:10/16;
+    max-width:min(98vw, 1100px);
+    max-height:min(96vh, 1500px);
+    aspect-ratio:10/17;
   }
 }
 .play-stage:has(.tetris-xl){
-  max-width:min(100%, 760px);
+  max-width:min(100%, 1120px);
   margin:0 auto;
+  border-radius:var(--radius-lg);
 }
 .play-pad.tetris-xl-pad button{
-  height:58px;font-size:16px;border-radius:14px;
+  height:68px;font-size:20px;border-radius:16px;font-weight:800;
 }
+.play-stage:has(.tetris-xl) .play-stage-hd h3{font-size:20px}
+.play-stage:has(.tetris-xl) .play-score{font-size:16px}
+
 .play-canvas-wrap canvas{
   width:100%;height:100%;display:block;touch-action:none;
 }
@@ -1215,7 +1219,7 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./games.js?v=5"></script>
+<script src="./games.js?v=6"></script>
 <script src="./app.js?v=4"></script>
 </body>
 </html>

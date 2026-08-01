@@ -192,70 +192,140 @@
   }
 
   function burst(x, y, n, color, speed) {
+    n = n || 12;
     for (var i = 0; i < n; i++) {
       var a = Math.random() * Math.PI * 2;
-      var sp = (speed || 120) * (0.4 + Math.random());
+      var sp = (speed || 160) * (0.45 + Math.random() * 1.1);
+      var kind = Math.random();
       particles.push({
         x: x, y: y,
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        life: 0.4 + Math.random() * 0.55,
-        max: 0.95,
-        r: 1.5 + Math.random() * 3.5,
+        life: 0.55 + Math.random() * 0.75,
+        max: 1.2,
+        r: 2.5 + Math.random() * 6.5,
         color: color || "#d4784a",
-        ball: Math.random() > 0.55
+        ball: kind > 0.45,
+        spark: kind < 0.25,
+        glow: kind > 0.7
       });
     }
   }
-  function floatText(x, y, text, color) {
-    floats.push({ x: x, y: y, text: text, life: 1.1, color: color || "#e8a57a" });
+  function ringBurst(x, y, color, scale) {
+    scale = scale || 1;
+    particles.push({
+      x: x, y: y, vx: 0, vy: 0,
+      life: 0.55, max: 0.55,
+      r: 8 * scale, ring: true, ringMax: 70 * scale,
+      color: color || "#ffe066"
+    });
+    particles.push({
+      x: x, y: y, vx: 0, vy: 0,
+      life: 0.4, max: 0.4,
+      r: 4 * scale, ring: true, ringMax: 110 * scale,
+      color: "#ffffff"
+    });
+  }
+  function floatText(x, y, text, color, size) {
+    floats.push({
+      x: x, y: y, text: text,
+      life: 1.5, color: color || "#e8a57a",
+      size: size || 22, scale: 1.25
+    });
   }
   function updateFX(dt) {
-    shake = Math.max(0, shake - dt * 8);
-    flash = Math.max(0, flash - dt * 3);
+    shake = Math.max(0, shake - dt * 6);
+    flash = Math.max(0, flash - dt * 2.2);
     for (var i = particles.length - 1; i >= 0; i--) {
       var p = particles[i];
       p.life -= dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 280 * dt;
-      p.vx *= 0.98;
+      if (p.ring) {
+        p.r += (p.ringMax - p.r) * Math.min(1, dt * 8);
+      } else {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += (p.spark ? 120 : 320) * dt;
+        p.vx *= 0.985;
+        if (p.glow) p.r *= 0.995;
+      }
       if (p.life <= 0) particles.splice(i, 1);
     }
     for (var j = floats.length - 1; j >= 0; j--) {
       var f = floats[j];
       f.life -= dt;
-      f.y -= 36 * dt;
+      f.y -= 48 * dt;
+      f.scale = 1 + (1.5 - f.life) * 0.15;
       if (f.life <= 0) floats.splice(j, 1);
     }
   }
   function drawFX(ctx) {
     particles.forEach(function (p) {
-      var a = clamp(p.life / 0.6, 0, 1);
+      var a = clamp(p.life / (p.max || 0.7), 0, 1);
       ctx.globalAlpha = a;
-      if (p.ball) {
+      if (p.ring) {
         ctx.beginPath();
-        ctx.fillStyle = "#f4f6f8";
-        ctx.arc(p.x, p.y, p.r + 1, 0, Math.PI * 2);
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 3 + a * 4;
+        ctx.arc(p.x, p.y, Math.max(2, p.r), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = a * 0.25;
+        ctx.beginPath();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.5;
+        ctx.arc(p.x, p.y, Math.max(2, p.r * 0.85), 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.ball) {
+        // glow
+        ctx.globalAlpha = a * 0.35;
+        ctx.beginPath();
+        ctx.fillStyle = p.color;
+        ctx.arc(p.x, p.y, p.r * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = a;
+        ctx.beginPath();
+        ctx.fillStyle = "#f8fafc";
+        ctx.arc(p.x, p.y, p.r + 1.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = p.color;
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 2;
         ctx.stroke();
-      } else {
+      } else if (p.spark) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(Math.atan2(p.vy, p.vx));
         ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, p.r, p.r);
+        ctx.fillRect(-p.r * 1.8, -1.2, p.r * 3.6, 2.4);
+        ctx.restore();
+      } else {
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.r / 2, p.y - p.r / 2, p.r, p.r);
+        ctx.shadowBlur = 0;
       }
     });
     ctx.globalAlpha = 1;
     floats.forEach(function (f) {
-      ctx.globalAlpha = clamp(f.life, 0, 1);
-      ctx.fillStyle = f.color;
-      ctx.font = "700 16px Instrument Sans, sans-serif";
+      var a = clamp(f.life, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(f.x, f.y);
+      ctx.scale(f.scale || 1, f.scale || 1);
+      var sz = f.size || 22;
+      ctx.font = "900 " + sz + "px Instrument Sans, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(f.text, f.x, f.y);
+      ctx.lineWidth = Math.max(3, sz * 0.12);
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.strokeText(f.text, 0, 0);
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, 0, 0);
+      ctx.restore();
     });
     ctx.globalAlpha = 1;
     if (flash > 0) {
-      ctx.fillStyle = "rgba(255,240,220," + (flash * 0.25) + ")";
+      // 이중 플래시
+      ctx.fillStyle = "rgba(255,250,240," + (flash * 0.45) + ")";
+      ctx.fillRect(0, 0, state.W, state.H);
+      ctx.fillStyle = "rgba(212,120,74," + (flash * 0.18) + ")";
       ctx.fillRect(0, 0, state.W, state.H);
     }
   }
@@ -264,9 +334,9 @@
     if (!canvas || !wrap) return;
     var r = wrap.getBoundingClientRect();
     var isXL = wrap.classList.contains("tetris-xl");
-    var dpr = Math.min(window.devicePixelRatio || 1, isXL ? 2.5 : 2);
-    var w = Math.max(isXL ? 320 : 280, Math.floor(r.width));
-    var h = Math.max(isXL ? 520 : 320, Math.floor(r.height));
+    var dpr = Math.min(window.devicePixelRatio || 1, isXL ? 3 : 2);
+    var w = Math.max(isXL ? 360 : 280, Math.floor(r.width));
+    var h = Math.max(isXL ? 640 : 320, Math.floor(r.height));
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
     canvas.style.width = w + "px";
@@ -446,35 +516,31 @@
   }
   function tetrisLayout() {
     var W = state.W, H = state.H;
-    // 보드를 화면의 대부분 차지 (약 3배 체감)
-    // 사이드 패널은 좁게, 셀은 가능한 최대로
-    var side = Math.min(Math.max(W * 0.16, 72), 110);
-    var pad = 8;
-    var maxBoardW = W - side - pad * 3;
-    var maxBoardH = H - pad * 2;
-    var cell = Math.floor(Math.min(maxBoardW / 10, maxBoardH / 20));
-    cell = Math.max(cell, 18); // 최소 셀 크기 보장
-    // 높이 우선: 세로로 거의 꽉
-    var cellH = Math.floor(maxBoardH / 20);
-    var cellW = Math.floor(maxBoardW / 10);
-    cell = Math.min(cellH, cellW);
-    // 가로가 남으면 셀을 더 키울 여지
-    if (cell * 10 + side + pad * 3 < W * 0.98) {
-      cell = Math.min(cellH, Math.floor((W - side - pad * 3) / 10));
-    }
+    // 보드 최대화: 사이드는 오버레이, 셀·글자 2배 체감
+    var pad = 6;
+    var cell = Math.floor(Math.min((W - pad * 2) / 10, (H - pad * 2) / 20));
+    cell = Math.max(cell, 28); // 최소 셀 크게
     var boardW = cell * 10;
     var boardH = cell * 20;
-    var ox = Math.max(pad, Math.floor((W - boardW - side - pad) / 2));
+    // 화면에 안 맞으면 맞춤
+    if (boardW > W - pad * 2 || boardH > H - pad * 2) {
+      cell = Math.floor(Math.min((W - pad * 2) / 10, (H - pad * 2) / 20));
+      boardW = cell * 10;
+      boardH = cell * 20;
+    }
+    var ox = Math.floor((W - boardW) / 2);
     var oy = Math.floor((H - boardH) / 2);
-    return { cell: cell, ox: ox, oy: oy, boardW: boardW, boardH: boardH, sideX: ox + boardW + 10 };
+    // 사이드 패널: 보드 안쪽 우측 오버레이
+    var sideX = ox + boardW - Math.min(cell * 2.4, 100) - 8;
+    return { cell: cell, ox: ox, oy: oy, boardW: boardW, boardH: boardH, sideX: sideX, overlay: true };
   }
   function tetrisFrame(dt) {
     var L = tetrisLayout();
     var W = state.W, H = state.H;
     var sx = 0, sy = 0;
     if (shake > 0) {
-      sx = (Math.random() - 0.5) * shake * 6;
-      sy = (Math.random() - 0.5) * shake * 6;
+      sx = (Math.random() - 0.5) * shake * 14;
+      sy = (Math.random() - 0.5) * shake * 14;
     }
     ctx.save();
     ctx.translate(sx, sy);
@@ -531,40 +597,45 @@
       }
     }
 
-    // side panel
-    ctx.fillStyle = "rgba(255,255,255,0.04)";
-    roundRect(ctx, L.sideX, L.oy, W - L.sideX - 12, L.boardH, 10);
+    // side panel (보드 위 오버레이 — 셀 최대화)
+    var sw = Math.min(L.cell * 2.6, 120);
+    var sx0 = L.ox + L.boardW - sw - 6;
+    var sy0 = L.oy + 8;
+    ctx.fillStyle = "rgba(8,12,18,0.72)";
+    roundRect(ctx, sx0, sy0, sw, Math.min(L.boardH * 0.42, L.cell * 9), 12);
     ctx.fill();
-    ctx.fillStyle = "#9aa3b2";
-    ctx.font = "600 11px Instrument Sans, sans-serif";
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 1;
+    roundRect(ctx, sx0, sy0, sw, Math.min(L.boardH * 0.42, L.cell * 9), 12);
+    ctx.stroke();
+    ctx.fillStyle = "#c5ccd6";
+    ctx.font = "800 " + Math.max(12, Math.floor(L.cell * 0.28)) + "px Instrument Sans, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText("NEXT", L.sideX + 10, L.oy + 22);
+    ctx.fillText("NEXT", sx0 + 10, sy0 + 22);
     if (state.next) {
       var nm = state.next.m;
-      var ns = L.cell * 0.7;
+      var ns = L.cell * 0.85;
       for (var y = 0; y < nm.length; y++) {
         for (var x = 0; x < nm[y].length; x++) {
           if (!nm[y][x]) continue;
-          drawCell(L.sideX + 14 + x * ns, L.oy + 36 + y * ns, ns, state.next.color, state.next.word, 1);
+          drawCell(sx0 + 12 + x * ns, sy0 + 32 + y * ns, ns, state.next.color, state.next.word, 1);
         }
       }
     }
-    ctx.fillStyle = "#9aa3b2";
-    ctx.fillText("WORD", L.sideX + 10, L.oy + 130);
     ctx.fillStyle = "#e8a57a";
-    ctx.font = "700 13px Instrument Sans, sans-serif";
-    if (state.piece) ctx.fillText(state.piece.word, L.sideX + 10, L.oy + 152);
+    ctx.font = "800 " + Math.max(13, Math.floor(L.cell * 0.3)) + "px Instrument Sans, sans-serif";
+    if (state.piece) ctx.fillText(state.piece.word, sx0 + 10, sy0 + L.cell * 5.2);
 
-    ctx.fillStyle = "#6b7382";
-    ctx.font = "500 10px Instrument Sans, sans-serif";
-    ctx.fillText("HOLD C", L.sideX + 10, L.oy + 190);
+    ctx.fillStyle = "#9aa3b2";
+    ctx.font = "700 " + Math.max(11, Math.floor(L.cell * 0.24)) + "px Instrument Sans, sans-serif";
+    ctx.fillText("HOLD C", sx0 + 10, sy0 + L.cell * 5.9);
     if (state.hold) {
       var hm = state.hold.m;
-      var hs = L.cell * 0.55;
+      var hs = L.cell * 0.7;
       for (var y = 0; y < hm.length; y++) {
         for (var x = 0; x < hm[y].length; x++) {
           if (!hm[y][x]) continue;
-          drawCell(L.sideX + 14 + x * hs, L.oy + 200 + y * hs, hs, state.hold.color, "", 0.9);
+          drawCell(sx0 + 12 + x * hs, sy0 + L.cell * 6.2 + y * hs, hs, state.hold.color, "", 0.95);
         }
       }
     }
@@ -578,16 +649,16 @@
       ctx.fillRect(0, 0, W, H);
       ctx.textAlign = "center";
       ctx.fillStyle = "#eef1f5";
-      ctx.font = "400 28px Instrument Serif, Georgia, serif";
-      ctx.fillText("즐탁 테트리스", W / 2, H * 0.38);
+      ctx.font = "400 42px Instrument Serif, Georgia, serif";
+      ctx.fillText("즐탁 테트리스", W / 2, H * 0.36);
       ctx.fillStyle = "#e8a57a";
-      ctx.font = "600 14px Instrument Sans, sans-serif";
-      ctx.fillText("블록에 새겨진 우리 방의 말들", W / 2, H * 0.45);
+      ctx.font = "700 18px Instrument Sans, sans-serif";
+      ctx.fillText("블록에 새겨진 우리 방의 말들", W / 2, H * 0.44);
       ctx.fillStyle = "rgba(255,255,255," + (0.55 + Math.sin(state.menuPulse * 3) * 0.35) + ")";
-      ctx.font = "600 13px Instrument Sans, sans-serif";
-      ctx.fillText("탭 또는 「게임 시작」", W / 2, H * 0.56);
+      ctx.font = "700 17px Instrument Sans, sans-serif";
+      ctx.fillText("탭 또는 「게임 시작」", W / 2, H * 0.54);
       ctx.fillStyle = "#6b7382";
-      ctx.font = "500 12px Instrument Sans, sans-serif";
+      ctx.font = "600 15px Instrument Sans, sans-serif";
       ctx.fillText("BEST " + hiGet("tetris").toLocaleString(), W / 2, H * 0.62);
     }
     if (state.over) {
@@ -646,13 +717,14 @@
     ctx.lineWidth = 1;
     ctx.arc(px + cell * 0.7, py + cell * 0.28, Math.max(2.5, cell * 0.11), 0, Math.PI * 2);
     ctx.stroke();
-    if (word && cell > 14) {
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.font = "800 " + Math.max(9, Math.floor(cell * 0.26)) + "px Instrument Sans, sans-serif";
+    if (word && cell > 12) {
+      var fs = Math.max(12, Math.floor(cell * 0.34));
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.font = "900 " + fs + "px Instrument Sans, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(word, px + cell / 2 + 0.5, py + cell * 0.58 + 0.5);
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.fillText(word, px + cell / 2 + 1, py + cell * 0.58 + 1);
+      ctx.fillStyle = "rgba(255,255,255,0.98)";
       ctx.fillText(word, px + cell / 2, py + cell * 0.58);
       ctx.textBaseline = "alphabetic";
     }
@@ -673,7 +745,8 @@
     var L = tetrisLayout();
     var cx = L.ox + (state.piece.x + 1.5) * L.cell;
     var cy = L.oy + (state.piece.y + 1) * L.cell;
-    burst(cx, cy, 8, state.piece.color, 80);
+    burst(cx, cy, 16, state.piece.color, 140);
+    ringBurst(cx, cy, state.piece.color, 0.55);
     clearLines();
     state.piece = state.next;
     state.next = newBag();
@@ -699,16 +772,23 @@
     }
     if (!full.length) { state.combo = 0; return; }
     var L = tetrisLayout();
+    var cx = L.ox + L.boardW / 2, cy = L.oy + L.boardH * 0.42;
     full.forEach(function (y) {
+      var rowCy = L.oy + (y + 0.5) * L.cell;
+      ringBurst(cx, rowCy, "#ffe066", 0.9 + full.length * 0.15);
       for (var x = 0; x < 10; x++) {
         var cell = state.board[y][x];
         var px = L.ox + (x + 0.5) * L.cell;
         var py = L.oy + (y + 0.5) * L.cell;
-        burst(px, py, 18, cell ? cell.c : "#d4784a", 220);
-        burst(px, py, 8, "#ffffff", 280);
-        burst(px, py, 6, pick(EXTRA_COLORS), 200);
+        burst(px, py, 28, cell ? cell.c : "#d4784a", 320);
+        burst(px, py, 14, "#ffffff", 380);
+        burst(px, py, 12, pick(EXTRA_COLORS), 300);
       }
     });
+    // center mega pop
+    ringBurst(cx, cy, "#ff6b35", 1.4 + full.length * 0.35);
+    burst(cx, cy, 40 + full.length * 18, "#ffe066", 420);
+    burst(cx, cy, 30, "#fff", 500);
     // remove lines
     full.sort(function (a, b) { return b - a; });
     full.forEach(function (y) {
@@ -724,13 +804,13 @@
     state.score += add;
     state.lines += n;
     state.level = 1 + Math.floor(state.lines / 10);
-    shake = 0.35 + n * 0.25;
-    flash = 0.35 + n * 0.15;
+    shake = 0.7 + n * 0.45;
+    flash = 0.65 + n * 0.28;
     var labels = ["", "드라이브!", "투핸드!", "트리플 랠리!", "테트리스 스매시!!"];
-    var cx = L.ox + L.boardW / 2, cy = L.oy + L.boardH * 0.4;
-    floatText(cx, cy, labels[n] || "클리어!", "#e8a57a");
-    if (state.combo > 1) floatText(cx, cy + 24, "COMBO x" + state.combo, "#5ec8d6");
-    if (n >= 4) { sfx("tetris"); sfx("smash"); }
+    floatText(cx, cy, labels[n] || "클리어!", "#ffe066", 28 + n * 4);
+    if (state.combo > 1) floatText(cx, cy + 36, "COMBO x" + state.combo, "#5ec8d6", 22);
+    floatText(cx, cy - 40, "+" + add, "#ffffff", 20);
+    if (n >= 4) { sfx("tetris"); sfx("smash"); sfx("pang"); }
     else if (n >= 2) { sfx("pang"); sfx("clear2"); }
     else { sfx("pop"); sfx("clear1"); }
     if (n >= 3) sfx("smash");
@@ -764,7 +844,8 @@
     while (!collides(state.board, state.piece, 0, 1)) { state.piece.y++; d++; }
     state.score += d * 2;
     sfx("drop");
-    shake = 0.25;
+    shake = 0.55;
+    flash = Math.max(flash, 0.2);
     lockPiece();
     setScore(hudTetris());
   }
