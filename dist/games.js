@@ -32,9 +32,20 @@
     L: [[0,0,1],[1,1,1]]
   };
   var COLORS = {
-    I: "#5ec8d6", O: "#e8c96a", T: "#c084fc", S: "#5d9b7b",
-    Z: "#e07a7a", J: "#6b8cce", L: "#d4784a"
+    I: "#00e5ff", O: "#ffe066", T: "#c77dff", S: "#2ecc71",
+    Z: "#ff6b6b", J: "#4dabf7", L: "#ff922b"
   };
+  // 타입별 다양 팔레트 (매 피스 랜덤 픽)
+  var COLOR_SETS = {
+    I: ["#00e5ff","#22d3ee","#67e8f9","#06b6d4","#7dd3fc"],
+    O: ["#ffe066","#ffd43b","#fcc419","#fab005","#ffec99"],
+    T: ["#c77dff","#da77f2","#e599f7","#be4bdb","#b197fc"],
+    S: ["#2ecc71","#40c057","#51cf66","#69db7c","#12b886"],
+    Z: ["#ff6b6b","#ff8787","#fa5252","#f06595","#ff8fab"],
+    J: ["#4dabf7","#339af0","#74c0fc","#228be6","#748ffc"],
+    L: ["#ff922b","#ff9f1c","#ffa94d","#fd7e14","#ff6b35"]
+  };
+  var EXTRA_COLORS = ["#ff00aa","#00ffc8","#a3ff12","#ff3d81","#7b61ff","#ffd60a","#00f5d4","#f15bb5"];
   var BAG_ORDER = ["I","O","T","S","Z","J","L"];
 
   var canvas, ctx, wrap, stage, grid, titleEl, hintEl, scoreEl, formHost, toolbar, padEl;
@@ -79,18 +90,105 @@
     o.start(t0); o.stop(t0 + dur + 0.02);
   }
   function sfx(name) {
-    if (name === "move") tone(420, 0.04, "square", 0.04);
-    else if (name === "rot") tone(520, 0.05, "triangle", 0.06);
-    else if (name === "drop") tone(180, 0.08, "triangle", 0.08, 90);
-    else if (name === "lock") tone(140, 0.07, "square", 0.07);
-    else if (name === "clear1") { tone(440, 0.1, "sine", 0.1); tone(660, 0.12, "triangle", 0.06); }
-    else if (name === "clear2") { tone(380, 0.08, "sine", 0.1); tone(560, 0.1, "sine", 0.08); tone(760, 0.14, "triangle", 0.07); }
-    else if (name === "tetris") { tone(523, 0.08, "square", 0.1); tone(659, 0.1, "square", 0.09); tone(784, 0.14, "square", 0.08); tone(1046, 0.2, "triangle", 0.07); }
-    else if (name === "smash") { tone(90, 0.12, "sawtooth", 0.12, 40); tone(220, 0.08, "square", 0.06); }
+    if (name === "move") tone(520, 0.035, "square", 0.05);
+    else if (name === "rot") { tone(640, 0.04, "triangle", 0.07); tone(820, 0.05, "sine", 0.04); }
+    else if (name === "drop") {
+      // 하드드롭 쾅
+      tone(220, 0.06, "square", 0.1, 80);
+      tone(110, 0.12, "triangle", 0.12, 55);
+      tone(90, 0.08, "sawtooth", 0.06, 40);
+    }
+    else if (name === "lock") {
+      // 착지 톡
+      tone(160, 0.05, "square", 0.09);
+      tone(240, 0.04, "triangle", 0.05);
+    }
+    else if (name === "soft") tone(300, 0.025, "sine", 0.035, 180);
+    else if (name === "pop" || name === "clear1") {
+      // 팡!
+      tone(880, 0.07, "square", 0.11);
+      tone(1320, 0.09, "triangle", 0.08);
+      tone(1760, 0.06, "sine", 0.05);
+      tone(440, 0.1, "sine", 0.06);
+    }
+    else if (name === "pang" || name === "clear2") {
+      // 팡팡!!
+      tone(660, 0.06, "square", 0.12);
+      tone(990, 0.08, "triangle", 0.1);
+      tone(1320, 0.1, "sine", 0.08);
+      tone(1980, 0.12, "triangle", 0.06);
+      tone(330, 0.1, "sawtooth", 0.05, 120);
+    }
+    else if (name === "tetris") {
+      // 테트리스 팡팡팡팡
+      tone(523, 0.07, "square", 0.12);
+      tone(659, 0.09, "square", 0.11);
+      tone(784, 0.11, "square", 0.1);
+      tone(1046, 0.16, "triangle", 0.1);
+      tone(1319, 0.2, "sine", 0.08);
+      tone(100, 0.15, "sawtooth", 0.08, 50);
+    }
+    else if (name === "smash") {
+      tone(80, 0.14, "sawtooth", 0.14, 35);
+      tone(200, 0.1, "square", 0.1, 70);
+      tone(1500, 0.05, "triangle", 0.06);
+    }
     else if (name === "gameover") { tone(200, 0.2, "sawtooth", 0.1, 60); tone(120, 0.3, "triangle", 0.08, 50); }
     else if (name === "coin") tone(880, 0.06, "sine", 0.07);
     else if (name === "hit") tone(160, 0.05, "square", 0.06);
     else if (name === "jump") tone(360, 0.06, "sine", 0.07, 520);
+  }
+
+  // ── 테트리스 BGM (Web Audio 루프) ──
+  var tetrisBgm = { on: false, timer: null, step: 0, master: null };
+  function stopTetrisBgm() {
+    tetrisBgm.on = false;
+    if (tetrisBgm.timer) { clearTimeout(tetrisBgm.timer); tetrisBgm.timer = null; }
+  }
+  function startTetrisBgm() {
+    stopTetrisBgm();
+    var ac = ensureAudio();
+    if (!ac) return;
+    if (!tetrisBgm.master) {
+      tetrisBgm.master = ac.createGain();
+      tetrisBgm.master.gain.value = 0.055;
+      tetrisBgm.master.connect(ac.destination);
+    }
+    tetrisBgm.on = true;
+    tetrisBgm.step = 0;
+    // 가벼운 8비트 코루틴 멜로디 (즐탁 비트)
+    var bass = [98, 98, 110, 98, 87, 87, 98, 110];
+    var lead = [392, 0, 440, 392, 523, 0, 494, 440, 392, 0, 349, 392, 440, 523, 0, 494];
+    function tick() {
+      if (!tetrisBgm.on || !audioCtx) return;
+      var t0 = audioCtx.currentTime;
+      var i = tetrisBgm.step % 16;
+      var b = bass[i % 8];
+      var l = lead[i];
+      function note(freq, type, vol, dur, when) {
+        if (!freq) return;
+        var o = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        o.type = type;
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, when);
+        g.gain.exponentialRampToValueAtTime(vol, when + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+        o.connect(g);
+        g.connect(tetrisBgm.master);
+        o.start(when);
+        o.stop(when + dur + 0.02);
+      }
+      // kick-ish every 4
+      if (i % 4 === 0) note(90, "sine", 0.12, 0.12, t0);
+      // hi hat
+      note(1800 + (i % 2) * 400, "square", 0.015, 0.03, t0);
+      note(b, "triangle", 0.07, 0.18, t0);
+      note(l, "square", 0.045, 0.12, t0 + 0.02);
+      tetrisBgm.step++;
+      tetrisBgm.timer = setTimeout(tick, 175);
+    }
+    tick();
   }
 
   function burst(x, y, n, color, speed) {
@@ -165,9 +263,10 @@
   function sizeCanvas() {
     if (!canvas || !wrap) return;
     var r = wrap.getBoundingClientRect();
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var w = Math.max(280, Math.floor(r.width));
-    var h = Math.max(320, Math.floor(r.height));
+    var isXL = wrap.classList.contains("tetris-xl");
+    var dpr = Math.min(window.devicePixelRatio || 1, isXL ? 2.5 : 2);
+    var w = Math.max(isXL ? 320 : 280, Math.floor(r.width));
+    var h = Math.max(isXL ? 520 : 320, Math.floor(r.height));
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
     canvas.style.width = w + "px";
@@ -225,18 +324,27 @@
     wrap.style.display = "block";
     toolbar.style.display = "flex";
     if (padEl) padEl.classList.toggle("on", !!m.pad);
+    // 테트리스 초대형 캔버스
+    if (wrap) wrap.classList.toggle("tetris-xl", id === "tetris");
+    if (padEl) padEl.classList.toggle("tetris-xl-pad", id === "tetris");
+    if (id !== "tetris") stopTetrisBgm();
     particles = []; floats = []; shake = 0; flash = 0;
     sizeCanvas();
     initGame(id);
   }
   function hideStage() {
     stopLoop();
+    stopTetrisBgm();
     current = null;
     stage.classList.remove("on");
     if (grid) grid.style.display = "";
     var feat = document.querySelector(".play-featured");
     if (feat) feat.style.display = "";
-    if (padEl) padEl.classList.remove("on");
+    if (padEl) {
+      padEl.classList.remove("on");
+      padEl.classList.remove("tetris-xl-pad");
+    }
+    if (wrap) wrap.classList.remove("tetris-xl");
     setScore("");
     refreshHi();
   }
@@ -251,12 +359,16 @@
       }
     }
     var type = state.bag.pop();
+    var palette = COLOR_SETS[type] || [COLORS[type]];
+    var col = palette[(Math.random() * palette.length) | 0];
+    // 가끔 특별 네온 색
+    if (Math.random() < 0.12) col = pick(EXTRA_COLORS);
     return {
       type: type,
       m: SHAPES[type].map(function (r) { return r.slice(); }),
       x: 3, y: 0,
       word: pick(WORDS),
-      color: COLORS[type]
+      color: col
     };
   }
   function rotateM(m) {
@@ -315,7 +427,15 @@
     state.over = false;
     state.clearAnim = null;
     state.menuPulse = 0;
+    state.softTick = 0;
     setScore(hudTetris());
+    if (startPlaying) {
+      ensureAudio();
+      startTetrisBgm();
+      sfx("coin");
+    } else {
+      stopTetrisBgm();
+    }
     loop(tetrisFrame);
   }
   function hudTetris() {
@@ -326,18 +446,27 @@
   }
   function tetrisLayout() {
     var W = state.W, H = state.H;
-    var side = Math.min(W * 0.22, 96);
-    var boardW = Math.min(W - side - 24, H * 0.48);
-    var cell = boardW / 10;
-    var boardH = cell * 20;
-    if (boardH > H - 24) {
-      cell = (H - 24) / 20;
-      boardW = cell * 10;
-      boardH = cell * 20;
+    // 보드를 화면의 대부분 차지 (약 3배 체감)
+    // 사이드 패널은 좁게, 셀은 가능한 최대로
+    var side = Math.min(Math.max(W * 0.16, 72), 110);
+    var pad = 8;
+    var maxBoardW = W - side - pad * 3;
+    var maxBoardH = H - pad * 2;
+    var cell = Math.floor(Math.min(maxBoardW / 10, maxBoardH / 20));
+    cell = Math.max(cell, 18); // 최소 셀 크기 보장
+    // 높이 우선: 세로로 거의 꽉
+    var cellH = Math.floor(maxBoardH / 20);
+    var cellW = Math.floor(maxBoardW / 10);
+    cell = Math.min(cellH, cellW);
+    // 가로가 남으면 셀을 더 키울 여지
+    if (cell * 10 + side + pad * 3 < W * 0.98) {
+      cell = Math.min(cellH, Math.floor((W - side - pad * 3) / 10));
     }
-    var ox = 14;
-    var oy = (H - boardH) / 2;
-    return { cell: cell, ox: ox, oy: oy, boardW: boardW, boardH: boardH, sideX: ox + boardW + 12 };
+    var boardW = cell * 10;
+    var boardH = cell * 20;
+    var ox = Math.max(pad, Math.floor((W - boardW - side - pad) / 2));
+    var oy = Math.floor((H - boardH) / 2);
+    return { cell: cell, ox: ox, oy: oy, boardW: boardW, boardH: boardH, sideX: ox + boardW + 10 };
   }
   function tetrisFrame(dt) {
     var L = tetrisLayout();
@@ -388,11 +517,17 @@
 
       state.drop += dt;
       var interval = Math.max(0.08, 0.72 - (state.level - 1) * 0.055);
-      if (state.soft) interval = 0.04;
+      if (state.soft) interval = 0.035;
       if (state.drop >= interval) {
         state.drop = 0;
-        if (!collides(state.board, state.piece, 0, 1)) state.piece.y++;
-        else lockPiece();
+        if (!collides(state.board, state.piece, 0, 1)) {
+          state.piece.y++;
+          if (state.soft) {
+            state.score += 1;
+            state.softTick = (state.softTick || 0) + 1;
+            if (state.softTick % 2 === 0) sfx("soft");
+          }
+        } else lockPiece();
       }
     }
 
@@ -484,26 +619,42 @@
   }
   function drawCell(px, py, cell, color, word, alpha) {
     ctx.globalAlpha = alpha == null ? 1 : alpha;
-    var pad = Math.max(1, cell * 0.06);
-    roundRect(ctx, px + pad, py + pad, cell - pad * 2, cell - pad * 2, Math.max(2, cell * 0.12));
-    var g = ctx.createLinearGradient(px, py, px, py + cell);
-    g.addColorStop(0, shade(color, 28));
-    g.addColorStop(1, color);
+    var pad = Math.max(1.5, cell * 0.05);
+    var rr = Math.max(3, cell * 0.16);
+    roundRect(ctx, px + pad, py + pad, cell - pad * 2, cell - pad * 2, rr);
+    var g = ctx.createLinearGradient(px, py, px + cell, py + cell);
+    g.addColorStop(0, shade(color, 40));
+    g.addColorStop(0.45, color);
+    g.addColorStop(1, shade(color, -25));
     ctx.fillStyle = g;
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.2)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    // mini ball mark
-    ctx.beginPath();
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.arc(px + cell * 0.72, py + cell * 0.28, Math.max(1.5, cell * 0.08), 0, Math.PI * 2);
+    // inner gloss
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    roundRect(ctx, px + pad + 2, py + pad + 2, cell - pad * 2 - 4, Math.max(3, cell * 0.28), rr * 0.6);
     ctx.fill();
-    if (word && cell > 16) {
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth = Math.max(1.5, cell * 0.04);
+    roundRect(ctx, px + pad, py + pad, cell - pad * 2, cell - pad * 2, rr);
+    ctx.stroke();
+    // 탁구공 하이라이트
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.arc(px + cell * 0.7, py + cell * 0.28, Math.max(2.5, cell * 0.11), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(0,0,0,0.15)";
+    ctx.lineWidth = 1;
+    ctx.arc(px + cell * 0.7, py + cell * 0.28, Math.max(2.5, cell * 0.11), 0, Math.PI * 2);
+    ctx.stroke();
+    if (word && cell > 14) {
       ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.font = "700 " + Math.max(7, Math.floor(cell * 0.22)) + "px Instrument Sans, sans-serif";
+      ctx.font = "800 " + Math.max(9, Math.floor(cell * 0.26)) + "px Instrument Sans, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(word, px + cell / 2, py + cell * 0.62);
+      ctx.textBaseline = "middle";
+      ctx.fillText(word, px + cell / 2 + 0.5, py + cell * 0.58 + 0.5);
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.fillText(word, px + cell / 2, py + cell * 0.58);
+      ctx.textBaseline = "alphabetic";
     }
     ctx.globalAlpha = 1;
   }
@@ -531,6 +682,7 @@
     if (collides(state.board, state.piece, 0, 0)) {
       state.over = true;
       state.playing = false;
+      stopTetrisBgm();
       sfx("gameover");
       shake = 1.2;
       hiSet("tetris", state.score);
@@ -552,9 +704,9 @@
         var cell = state.board[y][x];
         var px = L.ox + (x + 0.5) * L.cell;
         var py = L.oy + (y + 0.5) * L.cell;
-        burst(px, py, 10, cell ? cell.c : "#d4784a", 160);
-        // ball spray
-        burst(px, py, 3, "#f4f6f8", 200);
+        burst(px, py, 18, cell ? cell.c : "#d4784a", 220);
+        burst(px, py, 8, "#ffffff", 280);
+        burst(px, py, 6, pick(EXTRA_COLORS), 200);
       }
     });
     // remove lines
@@ -578,9 +730,9 @@
     var cx = L.ox + L.boardW / 2, cy = L.oy + L.boardH * 0.4;
     floatText(cx, cy, labels[n] || "클리어!", "#e8a57a");
     if (state.combo > 1) floatText(cx, cy + 24, "COMBO x" + state.combo, "#5ec8d6");
-    if (n >= 4) sfx("tetris");
-    else if (n >= 2) sfx("clear2");
-    else sfx("clear1");
+    if (n >= 4) { sfx("tetris"); sfx("smash"); }
+    else if (n >= 2) { sfx("pang"); sfx("clear2"); }
+    else { sfx("pop"); sfx("clear1"); }
     if (n >= 3) sfx("smash");
     setScore(hudTetris());
     hiSet("tetris", state.score);
