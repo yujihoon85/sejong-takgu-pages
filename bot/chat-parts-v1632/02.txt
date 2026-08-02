@@ -1,0 +1,401 @@
+// >>> CHAT_PART 2/9 세종이 v16.3.2 <<<
+var AWARD_HISTORY_LIMIT = 30;
+var AWARD_REQUIRE_BUNGGAE = true; // true면 벙개 로그가 있는 날만 상장 발송
+
+// =====================================================
+// 🤖 ReAct 에이전트 설정 (조용함)
+// =====================================================
+
+var REACT_AGENT_ENABLED = true;
+var REACT_AGENT_RATE = 0.03;
+var REACT_AGENT_GLOBAL_COOLDOWN = 90 * 60 * 1000;
+var REACT_AGENT_USER_COOLDOWN = 6 * 60 * 60 * 1000;
+var REACT_AGENT_DAILY_LIMIT = 2;
+var REACT_NIGHT_RATE = 0.10;
+
+// =====================================================
+// 🏓 승부예측/응원픽 설정
+// =====================================================
+
+var PREDICTION_TIMEOUT = 5 * 60 * 1000; // 픽 접수 5분
+var PREDICTION_MIN_POINT = 1;
+var PREDICTION_MAX_POINT = 100;
+
+var CRAZY_REWARD_POOL = [
+    { category: "슈퍼카", name: "테슬라 모델 X 플래드", emoji: "🔋🚘", line: "이번 주 드라이브 감성을 책임진 회원님께 가상 출고됩니다. 유지비는 봇이 안 냅니다." },
+    { category: "슈퍼카", name: "벤츠 마이바흐 S클래스 럭셔리 에디션", emoji: "💎🚗", line: "주차장은 없지만 품격만큼은 이미 오너입니다." },
+    { category: "미식", name: "미슐랭 3스타 시크릿 디너 2인 식사권", emoji: "🥂🍽️", line: "운동 후 컵라면 대신 상상 속 풀코스를 즐길 자격을 획득했습니다." },
+    { category: "로맨스", name: "탑배우와의 보람동 카페 데이트권", emoji: "🎬☕", line: "현실 지급은 없지만 단톡방 질투 지분은 충분합니다." },
+    { category: "여행", name: "하와이 와이키키 7일 살기 이용권", emoji: "🌴✈️", line: "복컴과 회사 사이를 탈출하는 상상력만큼은 일등입니다." },
+    { category: "우주", name: "스페이스X 화성 편도 티켓", emoji: "🚀🪐", line: "지구 중력보다 강한 존재감을 보인 회원님 전용입니다." },
+    { category: "럭셔리", name: "포시즌스 펜트하우스 1박 스위트권", emoji: "🏨✨", line: "이번 주 클래스가 남달랐던 분께 드리는 허세 특전입니다." },
+    { category: "힐링", name: "한강 요트 선셋 크루즈 프리패스", emoji: "🛥️🌇", line: "빡빡한 일상 속 여유를 가상으로 강제 지급합니다." },
+    { category: "미식", name: "도쿄 오마카세 왕복 상상권", emoji: "🍣🗼", line: "리시브보다 더 섬세한 감각을 보여준 분께 헌정합니다." },
+    { category: "레전드", name: "세종복컴 영구 명예 라커 이용권", emoji: "🏓👑", line: "실물은 없지만 명예만큼은 종신 보장입니다." },
+    { category: "명예", name: "세종 탁구방 종신 명예회장석", emoji: "👑🏓", line: "오늘의 존재감만큼은 회장님급이었습니다." },
+    { category: "럭셔리", name: "롤스로이스 팬텀 가상 시승권", emoji: "🚘🌟", line: "현실 차키는 없지만 단톡방 품격은 이미 1억 원대입니다." }
+];
+
+// =====================================================
+// 🧹 지역명/오타 보정
+// =====================================================
+
+var ALIASES = {
+    "세롬동": "새롬동",
+    "학슬동": "한솔동",
+    "학술동": "한솔동",
+    "합슬동": "한솔동",
+    "점혁등": "집현동",
+    "점혁동": "집현동"
+};
+
+var COMMAND_ALIASES = {
+    "벙게": "벙개",
+    "뻥개": "벙개",
+    "벙계": "벙개",
+    "참여": "참가",
+    "참가 취소": "참가취소",
+    "참석": "참가",
+    "매칭 시작": "매칭시작",
+    "맷칭": "매칭",
+    "출첵": "출석",
+    "포인트조회": "포인트",
+    "랭킹조회": "랭킹",
+    "도움": "도움말",
+    "헬프": "도움말",
+    "내정보카드": "내정보",
+    "프로필": "내정보",
+    "오늘의팁": "팁",
+    "탁구팁": "팁",
+    "질문하기": "질문",
+    "물어봐": "질문",
+    "ai": "질문",
+    "AI": "질문",
+    "인원수": "인원",
+    "이웃들": "이웃",
+    "동네사람": "이웃",
+    "오늘칠사람": "오늘모집",
+    "칠사람": "오늘모집",
+    "모집": "오늘모집",
+    "관리자명령": "관리자도움",
+    "관리자메뉴": "관리자도움",
+    "방장도움": "관리자도움",
+    "FAQ": "faq",
+    "자주묻는질문": "faq",
+    "홈피": "플랫폼",
+    "홈페이지": "플랫폼",
+    "사이트": "플랫폼",
+    "웹": "플랫폼",
+    "주간신문": "신문",
+    "아침신": "신문",
+    "상태체크": "헬스체크",
+    "서버상태": "헬스체크",
+    // 띄어쓰기 명령 (resolveCommand 와 함께 사용)
+    "벙개 현황": "벙개현황",
+    "벙개현황": "벙개현황",
+    "벙 현황": "벙개현황",
+    "벙현황": "벙개현황",
+    "참가 취소": "참가취소",
+    "오늘 모집": "오늘모집",
+    "오늘모집 현황": "오늘모집",
+    "매칭 시작": "매칭시작",
+    "매칭 목록": "매칭목록",
+    "매칭 취소": "매칭취소",
+    "매칭 가이드": "매칭가이드",
+    "예약 목록": "예약목록",
+    "예약 초기화": "예약초기화",
+    "예약 링크": "예약링크",
+    "API 상태": "API상태",
+    "API 설정": "API설정",
+    "API 삭제": "API삭제",
+    "AI 테스트": "AI테스트",
+    "내 정보": "내정보",
+    "예측 현황": "예측현황",
+    "예측 취소": "예측취소",
+    "상장 현황": "상장현황",
+    "상장 미리보기": "상장미리보기",
+    "상장 초기화": "상장초기화",
+    "회원 DB초기화": "회원DB초기화",
+    "회원DB 초기화": "회원DB초기화",
+    "관리자 도움": "관리자도움",
+    "관리자 추가": "관리자추가",
+    "차단 해제": "차단해제",
+    "헬스 체크": "헬스체크",
+    "아침 신문": "신문",
+    "주간 신문": "신문",
+    "벙개 취소": "벙개취소",
+    "벙개취소": "벙개취소",
+    "벙 취소": "벙개취소",
+    "벙개 종료": "벙개종료",
+    "추가 참가": "추가참가",
+    "추가참가": "추가참가",
+    "추가참가자": "추가참가",
+    "추가 참가자": "추가참가",
+    "벙개 참가": "추가참가",
+    "벙개참가": "추가참가",
+    "대리 참가": "추가참가",
+    "대리참가": "추가참가",
+    "강제 참가": "추가참가",
+    "강제참가": "추가참가",
+    "명단 추가": "추가참가",
+    "명단추가": "추가참가"
+};
+
+
+// =====================================================
+// 💡 v16.1 오늘의 탁구 팁 (AI 꺼져 있어도 작동하는 내장 목록)
+// =====================================================
+
+var TABLE_TENNIS_TIPS = [
+    "포핸드 드라이브는 팔로만 치지 말고 허리 회전으로 공을 감아올리세요. 힘이 확 실려요.",
+    "서브 넣을 때 손목 스냅을 살리면 회전량이 늘어나요. 상대가 리시브 실수를 많이 합니다.",
+    "리시브가 어렵다면 일단 공을 상대 코트에 '넘기는 것'에 집중하세요. 안정이 먼저예요.",
+    "백핸드는 팔꿈치를 몸 앞에 고정하고, 라켓을 짧게 스윙하면 컨트롤이 좋아져요.",
+    "발이 멈추면 공도 멈춥니다. 랠리 중에도 잔발로 계속 위치를 잡으세요.",
+    "공을 세게 치는 것보다 '같은 코스로 꾸준히' 치는 게 이기는 탁구예요.",
+    "커트(하회전) 공은 라켓을 살짝 눕혀서 밀어주듯 받아야 네트에 안 걸려요.",
+    "경기 전 5분만 몸을 풀어도 부상 위험이 확 줄어요. 특히 어깨와 손목을 돌려주세요.",
+    "상대 약점을 파악하세요. 백핸드가 약하면 백핸드 쪽으로 계속 보내는 것도 전략이에요.",
+    "스매시는 찬스볼에만. 공이 높이 뜨면 그때 강하게, 평소엔 안정적인 드라이브로.",
+    "라켓 러버는 3~6개월마다 상태를 확인하세요. 낡으면 회전이 안 걸려요.",
+    "긴장되면 크게 숨을 내쉬고 어깨 힘을 빼세요. 힘이 들어가면 공이 자꾸 길어져요.",
+    "복식에서는 파트너와 '누가 어느 공을 칠지' 미리 정하면 충돌이 줄어요.",
+    "짧은 공(스톱)과 긴 공(드라이브)을 섞으면 상대 리듬을 깰 수 있어요.",
+    "연습할 때 한 가지 기술만 30분 집중하면, 이것저것 하는 것보다 훨씬 빨리 늘어요."
+];
+
+// =====================================================
+// 📁 파일 I/O (동시성 보호)
+// =====================================================
+
+function ensureDir() {
+    try {
+        var dir = new java.io.File(DATA_DIR);
+        if (!dir.exists()) dir.mkdirs();
+        var bdir = new java.io.File(BACKUP_DIR);
+        if (!bdir.exists()) bdir.mkdirs();
+    } catch (e) {}
+}
+
+function loadJSON(path, defaultVal) {
+    try {
+        var file = new java.io.File(path);
+        if (!file.exists()) return defaultVal;
+
+        var reader = new java.io.BufferedReader(new java.io.FileReader(file));
+        var line = "";
+        var content = "";
+        while ((line = reader.readLine()) !== null) {
+            content += line;
+        }
+        reader.close();
+
+        if (!content || content === "") return defaultVal;
+        return JSON.parse(content);
+    } catch (e) {
+        return defaultVal;
+    }
+}
+
+function saveJSON(path, data) {
+    try {
+        ensureDir();
+        var writer = new java.io.FileWriter(path);
+        writer.write(JSON.stringify(data));
+        writer.close();
+    } catch (e) {}
+}
+
+/**
+ * updateJSON: load → 수정 → save 를 하나의 잠금 구간으로.
+ * 동시에 들어온 메시지가 서로의 변경을 덮어쓰지 않도록 ReentrantLock 사용.
+ */
+var __FILE_LOCKS__ = {};
+
+function getFileLock(path) {
+    if (!__FILE_LOCKS__[path]) {
+        __FILE_LOCKS__[path] = new java.util.concurrent.locks.ReentrantLock();
+    }
+    return __FILE_LOCKS__[path];
+}
+
+function updateJSON(path, defaultVal, mutator) {
+    var lock = getFileLock(path);
+    lock.lock();
+    try {
+        var data = loadJSON(path, defaultVal);
+        var toSave = mutator(data);
+        if (typeof toSave !== "undefined" && toSave !== null) {
+            saveJSON(path, toSave);
+            return toSave;
+        }
+        return data;
+    } catch (e) {
+        return loadJSON(path, defaultVal);
+    } finally {
+        lock.unlock();
+    }
+}
+
+/**
+ * 핵심 파일 자동 백업 (하루 1회)
+ */
+function autoBackupOncePerDay() {
+    try {
+        ensureDir();
+        var config = loadJSON(FILE_CONFIG, {});
+        var today = getTodayKey();
+        if (config.lastBackupDate === today) return;
+
+        var targets = [
+            { src: FILE_BUNGGAE, name: "bunggae" },
+            { src: FILE_POINT, name: "point" },
+            { src: FILE_STREAK, name: "streak" },
+            { src: FILE_ELO, name: "elo" },
+            { src: FILE_USERS, name: "users" },
+            { src: FILE_MATCHES_HISTORY, name: "matches_history" },
+            { src: FILE_RESERVATIONS, name: "reservations" }
+        ];
+
+        for (var i = 0; i < targets.length; i++) {
+            var data = loadJSON(targets[i].src, null);
+            if (data !== null) {
+                saveJSON(BACKUP_DIR + targets[i].name + "_" + today + ".json", data);
+            }
+        }
+
+        config.lastBackupDate = today;
+        saveJSON(FILE_CONFIG, config);
+    } catch (e) {}
+}
+
+// =====================================================
+// 📅 날짜/시간
+// =====================================================
+
+function getTodayKey() {
+    var d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+}
+
+function getYesterdayKey() {
+    var d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+}
+
+function getNowText() {
+    var d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate() +
+        " " + d.getHours() + ":" + d.getMinutes();
+}
+
+function getAwardDayKey(dateObj) {
+    var d = dateObj || new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+}
+
+// v16.1: 주(week) 키 — 그 해의 몇 번째 주인지. 주간 랭킹 비교에 사용.
+function getWeekKey(dateObj) {
+    var d = dateObj || new Date();
+    var year = d.getFullYear();
+    var start = new Date(year, 0, 1);
+    var diffDays = Math.floor((d - start) / (24 * 60 * 60 * 1000));
+    var week = Math.floor((diffDays + start.getDay()) / 7);
+    return year + "-W" + week;
+}
+
+// =====================================================
+// 🧰 공통 유틸
+// =====================================================
+
+function normalizeName(name) {
+    if (!name) return "";
+    name = String(name).replace(/[·/_\-]/g, " ").replace(/\s+/g, " ").trim();
+    for (var k in ALIASES) {
+        if (name.indexOf(k) >= 0) {
+            name = name.replace(k, ALIASES[k]);
+        }
+    }
+    return name.trim();
+}
+
+function getShortName(sender) {
+    var normalized = normalizeName(sender);
+    var parts = normalized.split(/\s+/);
+    if (parts.length === 0) return normalized;
+    return parts[parts.length - 1];
+}
+
+function safeShort(text, maxLen) {
+    if (!text) return "";
+    text = String(text).replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+    if (text.length > maxLen) return text.substring(0, maxLen) + "...";
+    return text;
+}
+
+function getRankScore(rank) {
+    if (!rank) return 1;
+    if (rank === "초보") return 1;
+    if (rank === "초심") return 1;
+    if (rank === "초심부") return 2;
+    if (rank === "선수부") return 11;
+    var match = String(rank).match(/([0-9]+)부/);
+    if (match) return parseInt(match[1], 10);
+    return 1;
+}
+
+function extractRank(fullName) {
+    var rank = "초보";
+    var match = String(fullName).match(/(\d+부|선수부|초심부|초심|초보)/);
+    if (match) rank = match[1];
+    return rank;
+}
+
+function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+    return arr;
+}
+
+// =====================================================
+// 👑 관리자
+// =====================================================
+
+function isAdmin(sender) {
+    for (var i = 0; i < ADMINS.length; i++) {
+        if (sender.indexOf(ADMINS[i]) >= 0) return true;
+    }
+    var admins = loadJSON(FILE_ADMINS, { list: [] });
+    return admins.list.indexOf(sender) >= 0 ||
+           admins.list.indexOf(getShortName(sender)) >= 0;
+}
+
+function addAdmin(nickname) {
+    var added = false;
+    updateJSON(FILE_ADMINS, { list: [] }, function(admins) {
+        if (admins.list.indexOf(nickname) === -1) {
+            admins.list.push(nickname);
+            added = true;
+            return admins;
+        }
+        return undefined;
+    });
+    return added;
+}
+
+// =====================================================
+// 🚫 차단
+// =====================================================
+
+function isBlocked(sender) {
+    var blocked = loadJSON(FILE_BLOCKED, { list: [] });
+    return blocked.list.indexOf(sender) >= 0 ||
+           blocked.list.indexOf(getShortName(sender)) >= 0;
+}
+
+function blockUser(nickname) {

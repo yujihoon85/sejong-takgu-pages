@@ -1,0 +1,401 @@
+// >>> CHAT_PART 3/9 세종이 v16.3.2 <<<
+    var added = false;
+    updateJSON(FILE_BLOCKED, { list: [] }, function(blocked) {
+        if (blocked.list.indexOf(nickname) === -1) {
+            blocked.list.push(nickname);
+            added = true;
+            return blocked;
+        }
+        return undefined;
+    });
+    return added;
+}
+
+function unblockUser(nickname) {
+    var removed = false;
+    updateJSON(FILE_BLOCKED, { list: [] }, function(blocked) {
+        var index = blocked.list.indexOf(nickname);
+        if (index >= 0) {
+            blocked.list.splice(index, 1);
+            removed = true;
+            return blocked;
+        }
+        return undefined;
+    });
+    return removed;
+}
+
+// =====================================================
+// 🔇 도배 방지
+// =====================================================
+
+function checkSpam(sender) {
+    var now = new Date().getTime();
+    var isSpam = false;
+    updateJSON(FILE_SPAM, {}, function(spam) {
+        if (!spam[sender]) {
+            spam[sender] = { count: 1, lastTime: now };
+            return spam;
+        }
+        var timeDiff = now - spam[sender].lastTime;
+        if (timeDiff > SPAM_WINDOW) {
+            spam[sender] = { count: 1, lastTime: now };
+            return spam;
+        }
+        spam[sender].count++;
+        spam[sender].lastTime = now;
+        isSpam = spam[sender].count > SPAM_LIMIT;
+        return spam;
+    });
+    return isSpam;
+}
+
+// =====================================================
+// 📊 통계
+// =====================================================
+
+function incrementStat(key) {
+    updateJSON(FILE_STATS, {}, function(stats) {
+        if (!stats[key]) stats[key] = 0;
+        stats[key]++;
+        return stats;
+    });
+}
+
+// =====================================================
+// 🔑 API 키 관리
+// =====================================================
+
+function loadAPIKey() {
+    if (GEMINI_API_KEY && GEMINI_API_KEY !== "") return GEMINI_API_KEY;
+    var config = loadJSON(FILE_CONFIG, {});
+    GEMINI_API_KEY = config.geminiKey || "";
+    return GEMINI_API_KEY;
+}
+
+function saveAPIKey(key) {
+    updateJSON(FILE_CONFIG, {}, function(config) {
+        config.geminiKey = key;
+        return config;
+    });
+    GEMINI_API_KEY = key;
+}
+
+function clearAPIKey() {
+    updateJSON(FILE_CONFIG, {}, function(config) {
+        config.geminiKey = "";
+        return config;
+    });
+    GEMINI_API_KEY = "";
+}
+
+function getApiStatus() {
+    loadAPIKey();
+    if (!GEMINI_API_KEY) return "🔑 Gemini API 상태\n\n❌ 미설정";
+    var masked = GEMINI_API_KEY.substring(0, 8) + "..." +
+        GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4);
+    return "🔑 Gemini API 상태\n\n✅ 설정됨\n" + masked + "\n모델: " + GEMINI_MODEL;
+}
+
+// =====================================================
+// 🤖 Gemini 호출 (v16.2: 재시도 + 에러힌트 + 강화 프롬프트)
+// =====================================================
+
+function callGeminiText(promptText) {
+    loadAPIKey();
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "") return null;
+
+    var lastError = "";
+    for (var attempt = 0; attempt < 2; attempt++) {
+        try {
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/" +
+                      GEMINI_MODEL + ":generateContent";
+            var body = {
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: { temperature: 0.5, maxOutputTokens: 512 }
+            };
+            var response = org.jsoup.Jsoup.connect(url)
+                .header("Content-Type", "application/json")
+                .header("x-goog-api-key", GEMINI_API_KEY)
+                .ignoreContentType(true)
+                .ignoreHttpErrors(true)
+                .timeout(20000)
+                .requestBody(JSON.stringify(body))
+                .post()
+                .text();
+
+            var data = JSON.parse(response);
+            if (data.error) {
+                lastError = (data.error.message || "API_ERROR").toString().slice(0, 120);
+                try { Log.e("GeminiError", lastError); } catch (e0) {}
+                try { java.lang.Thread.sleep(400); } catch (e1) {}
+                continue;
+            }
+            if (
+                data.candidates &&
+                data.candidates.length > 0 &&
+                data.candidates[0].content &&
+                data.candidates[0].content.parts &&
+                data.candidates[0].content.parts.length > 0
+            ) {
+                return data.candidates[0].content.parts[0].text.trim();
+            }
+            lastError = "EMPTY_RESPONSE";
+            try { Log.e("GeminiEmpty", String(response).slice(0, 200)); } catch (e2) {}
+        } catch (e) {
+            lastError = String(e).slice(0, 120);
+            try { Log.e("GeminiException", lastError); } catch (e3) {}
+            try { java.lang.Thread.sleep(400); } catch (e4) {}
+        }
+    }
+    // 마지막 에러를 전역에 남겨 관리자 힌트용
+    try { __LAST_GEMINI_ERROR__ = lastError; } catch (e5) {}
+    return null;
+}
+
+var __LAST_GEMINI_ERROR__ = "";
+
+function buildSystemPrompt(question, sender) {
+    return (
+        "당신은 '세종이' — 세종시 탁구 커뮤니티 AI 비서입니다.\n" +
+        "역할: 탁구방 운영 보조, 초보 코치, 코트/복컴 안내, 이웃 연결.\n\n" +
+        "[지역 지식 — 모르면 추측 금지, 확인 유도]\n" +
+        "- 복컴(복합커뮤니티센터): 주민 예약제. 이용료 저렴(예: 2시간 2,000원대).\n" +
+        "- 예약: 세종시 통합예약 onestop.sejong.go.kr , 보통 14일 전, 1인 횟수 제한.\n" +
+        "- 사설 클럽: 리그·레슨·실력대. 예) 대평 박범근탁구클럽, 나성 엘스텝 등.\n" +
+        "- 아파트 커뮤니티 탁구장: 입주민 전용 多. 시설·시간은 단지마다 다름.\n" +
+        "- '어디가 제일 좋냐'는 실력대·거리·시간대에 따라 다름. 동/부수/시간을 물어보고 추천.\n" +
+        "- 카톡 명령 안내 가능: 세종 인원/이웃/벙개/매칭/탁구장/오늘모집/도움말.\n\n" +
+        "[말투]\n- 한국어, 짧고 친근. 500자 이내. 초보자도 이해.\n" +
+        "- 정치/비방 금지. 모르면 모른다고.\n" +
+        "- 가능하면 마지막에 다음 행동 1줄 제안 (예: 세종 탁구장 도담동).\n\n" +
+        "질문자: " + sender + "\n질문: " + question
+    );
+}
+
+function askGemini(question, sender) {
+    loadAPIKey();
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "") {
+        return "━━━ 🤖 AI 기능 안내 ━━━\n\n" +
+               "AI 기능을 사용하려면 관리자가 먼저 설정해야 해요.\n\n" +
+               "관리자 명령:\n세종 API설정 AIzaSy...\n\n" +
+               "API 없이도 매칭/벙개/출석/인원/이웃/오늘모집은 사용 가능해요.";
+    }
+
+    var faqHit = tryFaqAnswer(question);
+    if (faqHit) {
+        incrementStat("faq_hits");
+        return "📌 [빠른 안내]\n\n" + faqHit;
+    }
+
+    var answer = callGeminiText(buildSystemPrompt(question, sender));
+    if (!answer) {
+        var hint = "⚠️ AI 응답 실패\n잠시 후 다시 시도해주세요.\n💡 세종 AI테스트 후 재시도, 또는 세종 faq";
+        if (isAdmin(sender) && __LAST_GEMINI_ERROR__) {
+            hint += "\n(관리자) 원인: " + __LAST_GEMINI_ERROR__;
+        }
+        return hint;
+    }
+
+    incrementStat("ai_questions");
+    addAwardLog("AI질문", sender, question);
+    return "🤖 [AI 답변]\n\n" + answer;
+}
+
+function testAI() {
+    __LAST_GEMINI_ERROR__ = "";
+    var answer = callGeminiText("짧게 답하세요. 세종 탁구방 AI 테스트 성공이라고 말해줘.");
+    if (!answer) {
+        var msg = "❌ AI 테스트 실패\nAPI 키 또는 네트워크를 확인해주세요.";
+        if (__LAST_GEMINI_ERROR__) msg += "\n원인: " + __LAST_GEMINI_ERROR__;
+        return msg;
+    }
+    return "✅ AI 테스트 성공 (" + GEMINI_MODEL + ")\n\n" + answer;
+}
+
+
+// =====================================================
+// 👤 회원 DB
+// =====================================================
+
+function getInitialMembers() {
+    return [
+        "고운동 8부 한스", "고운동 8부 lee", "고운동 9부 일펜", "고운동 초보 강사",
+        "고운동 초심부 지오", "고운동 초심부 노마드", "고운동 6부 불리",
+        "고운동 7부 백드라이브", "고운동 8부 레오", "다정동 9부 표",
+        "다정동 6부 도라깨동", "다정동 6부 라이언", "다정동 7부 일삼공",
+        "다정동 초심부", "다정동 8부 탁린이", "새롬동 6부 열락", "새롬동 7부 엄지척",
+        "새롬동 7부 이솔", "새롬동 8부 밤눈", "새롬동 9부 티모", "새롬동 초보 세알",
+        "나성동 8부 나달", "나성동 3부 달퐁", "나성동 6부 시론", "아름동 초보 헬로",
+        "아름동 초심부 라이언", "한솔동 8부 졸탁", "한솔동 8부 탁초아",
+        "한솔동 9부 티모를", "보람동 초보 충녕이", "산울동 8부 박선생",
+        "종촌동 1부 zion", "소담동 7부 가재토말", "어진동 7부 느림보",
+        "도담동 8부 제지", "도담동 9부 탁린이", "대평동 6부 도라깨동",
+        "대평동 7부 임상공", "집현동 7부 팸클럽", "집현동 9부 답이"
+    ];
+}
+
+function initMemberDB() {
+    var added = 0;
+    updateJSON(FILE_USERS, {}, function(data) {
+        var members = getInitialMembers();
+        if (!data.__nextId__) data.__nextId__ = 1000;
+        var seen = {};
+
+        for (var i = 0; i < members.length; i++) {
+            var fullName = normalizeName(members[i]);
+            if (seen[fullName]) continue;
+            seen[fullName] = true;
+
+            if (!data[fullName]) {
+                var rank = extractRank(fullName);
+                var parts = fullName.split(/\s+/);
+                var short = parts[parts.length - 1] || fullName;
+                var region = parts[0] || "미분류";
+
+                data[fullName] = {
+                    id: "U" + data.__nextId__,
+                    shortName: short,
+                    rank: rank,
+                    region: region,
+                    fullName: fullName,
+                    registered: getTodayKey()
+                };
+                data.__nextId__++;
+                added++;
+            }
+        }
+
+        data.__initialized__ = true;
+        data.__botVersion__ = BOT_VERSION;
+        return data;
+    });
+    return added;
+}
+
+function updateMemberDB(sender) {
+    var normalized = normalizeName(sender);
+    var resultUser = null;
+
+    updateJSON(FILE_USERS, {}, function(data) {
+        if (!data.__nextId__) data.__nextId__ = 1000;
+
+        if (data[normalized]) {
+            resultUser = data[normalized];
+            return undefined;
+        }
+
+        var rank = extractRank(normalized);
+        var parts = normalized.split(/\s+/);
+        var short = parts.length > 1 ? parts[parts.length - 1] : normalized;
+        var region = parts[0] || "미분류";
+
+        data[normalized] = {
+            id: "U" + data.__nextId__,
+            shortName: short,
+            rank: rank,
+            region: region,
+            fullName: normalized,
+            registered: getTodayKey()
+        };
+        data.__nextId__++;
+        resultUser = data[normalized];
+        return data;
+    });
+
+    return resultUser;
+}
+
+function searchMember(keyword) {
+    keyword = normalizeName(keyword);
+    if (!keyword) return "💡 사용법: 세종 검색 [이름/부수/동네]\n예: 세종 검색 8부";
+
+    var users = loadJSON(FILE_USERS, {});
+    var found = [];
+
+    for (var key in users) {
+        if (key === "__initialized__" || key === "__nextId__" || key === "__botVersion__") continue;
+        var user = users[key];
+        if (!user) continue;
+
+        var rank = user.rank || "";
+        var shortName = user.shortName || "";
+        var region = user.region || "";
+        var fullName = user.fullName || key;
+
+        if (rank.indexOf(keyword) >= 0 || shortName.indexOf(keyword) >= 0 ||
+            region.indexOf(keyword) >= 0 || fullName.indexOf(keyword) >= 0) {
+            found.push(shortName + " (" + region + " " + rank + ")");
+        }
+    }
+
+    if (found.length === 0) return "❌ 검색 결과 없음";
+
+    var result = "🔍 [" + keyword + "] 검색 결과 " + found.length + "명\n\n";
+    for (var i = 0; i < found.length && i < 40; i++) {
+        result += (i + 1) + ". " + found[i] + "\n";
+    }
+    if (found.length > 40) result += "\n외 " + (found.length - 40) + "명 더 있음";
+    return result;
+}
+
+// =====================================================
+// 🌤️ 날씨 (현재 온도 한 줄)
+// =====================================================
+
+function fetchWeatherNow(city) {
+    try {
+        var url = "https://wttr.in/" + city + "?format=j1&lang=ko";
+        var response = org.jsoup.Jsoup.connect(url)
+            .ignoreContentType(true)
+            .timeout(10000)
+            .execute()
+            .body();
+
+        var data = JSON.parse(response);
+        var c = data.current_condition[0];
+        return "🌤️ 세종 현재 " + c.temp_C + "°C";
+    } catch (e) {
+        return "❌ 날씨 정보를 불러오지 못했어요.";
+    }
+}
+
+// =====================================================
+// 🍽️ 생활 정보 (1~4생활권, 3곳 랜덤)
+// =====================================================
+
+function getRealSejongRestaurant() {
+    var places = [
+        { name: "황가원", type: "석갈비", loc: "어진동" },
+        { name: "121번지", type: "파스타·오므라이스", loc: "어진동" },
+        { name: "은희네해장국", type: "해장국·내장탕", loc: "어진동" },
+        { name: "세종숯불갈비", type: "고기집", loc: "나성동" },
+        { name: "번패티번", type: "수제버거", loc: "나성동" },
+        { name: "포트랑", type: "베트남 쌀국수", loc: "나성동" },
+        { name: "봄베이브로이", type: "정통 인도요리", loc: "새롬동" },
+        { name: "9찬종로백반", type: "백반정식", loc: "새롬동" },
+        { name: "목구멍", type: "고기집", loc: "도담동" },
+        { name: "5.5닭갈비", type: "닭갈비", loc: "도담동" },
+        { name: "맛찬들", type: "삼겹살정식", loc: "도담동" },
+        { name: "희락", type: "퓨전요리", loc: "다정동" },
+        { name: "서리서리", type: "김밥·콩국수", loc: "고운동" }
+    ];
+
+    var picked = shuffle(places.slice()).slice(0, 3);
+    var msg = "━━━ 🍽️ 세종 맛집 추천 ━━━\n\n";
+    for (var i = 0; i < picked.length; i++) {
+        msg += (i + 1) + ". " + picked[i].name + " (" + picked[i].type + ")\n" +
+               "   📍 " + picked[i].loc + "\n";
+    }
+    msg += "\n맛있게 드세요! 😋";
+    return msg;
+}
+
+function getSejongCafe() {
+    var cafes = [
+        { name: "테라로사 세종", loc: "어진동" },
+        { name: "윤연당", type: "빵·눈꽃빵", loc: "어진동" },
+        { name: "바이핸커피", loc: "어진동" },
+        { name: "라운지46", type: "뷰카페", loc: "나성동" },
+        { name: "카페45", type: "뷰카페", loc: "나성동" },
+        { name: "레조넌스커피랩", loc: "나성동" },

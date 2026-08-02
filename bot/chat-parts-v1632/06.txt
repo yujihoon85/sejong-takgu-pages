@@ -1,0 +1,401 @@
+// >>> CHAT_PART 6/9 세종이 v16.3.2 <<<
+        }
+        game = g;
+        delete pending[name];
+        return pending;
+    });
+
+    if (expired) return "⌛ 승인 시간이 지나 취소됐어요.";
+    if (!game) return "❌ 승인 대기 중인 경기 결과가 없어요.";
+
+    var winner = game.winner;
+    var loser = game.loser;
+    var wOld = getElo(winner);
+    var lOld = getElo(loser);
+
+    var expectedW = 1 / (1 + Math.pow(10, (lOld - wOld) / 400));
+    var expectedL = 1 / (1 + Math.pow(10, (wOld - lOld) / 400));
+    var wNew = Math.round(wOld + ELO_K * (1 - expectedW));
+    var lNew = Math.round(lOld + ELO_K * (0 - expectedL));
+
+    setElo(winner, wNew);
+    setElo(loser, lNew);
+
+    updateJSON(FILE_MATCHES_HISTORY, [], function(history) {
+        history.push({
+            winner: winner, loser: loser,
+            winnerOld: wOld, loserOld: lOld,
+            winnerNew: wNew, loserNew: lNew,
+            date: getTodayKey()
+        });
+        return history;
+    });
+
+    incrementStat("elo_matches");
+    addAwardLog("경기결과", winner, winner + " 승리 / " + loser + " 패배");
+
+    var predictionSettleMsg = settlePredictionIfMatch(winner, loser);
+
+    return "🏓 경기 결과 반영 완료!\n\n🥇 " + winner + ": " + wOld + " → " + wNew +
+           "\n🥈 " + loser + ": " + lOld + " → " + lNew + predictionSettleMsg;
+}
+
+function showRecord(name) {
+    name = normalizeName(name);
+    if (!name) return "💡 사용법: 세종 전적 [이름]";
+
+    var history = loadJSON(FILE_MATCHES_HISTORY, []);
+    var win = 0;
+    var lose = 0;
+
+    for (var i = 0; i < history.length; i++) {
+        var m = history[i];
+        if (m.winner === name) win++;
+        else if (m.loser === name) lose++;
+    }
+
+    var total = win + lose;
+    var rate = total === 0 ? 0 : Math.round((win / total) * 100);
+    var elo = getElo(name);
+
+    return "📊 " + name + " 전적\n\n🏓 ELO: " + elo + "\n🥇 승: " + win +
+           "\n🥈 패: " + lose + "\n📈 승률: " + rate + "%";
+}
+
+function showEloRanking() {
+    var data = loadJSON(FILE_ELO, {});
+    var arr = [];
+    for (var name in data) {
+        arr.push({ name: name, elo: data[name] });
+    }
+    arr.sort(function(a, b) { return b.elo - a.elo; });
+    if (arr.length === 0) return "🏓 ELO 데이터가 아직 없어요.";
+
+    var msg = "━━━ 🏓 ELO 랭킹 TOP 10 ━━━\n\n";
+    for (var i = 0; i < arr.length && i < 10; i++) {
+        var medal = (i === 0) ? "🥇" : (i === 1) ? "🥈" : (i === 2) ? "🥉" : (i + 1) + "위";
+        msg += medal + " " + arr[i].name + ": " + arr[i].elo + "\n";
+    }
+    return msg;
+}
+
+// =====================================================
+// 📅 예약
+// =====================================================
+
+function addReservation(sender, args) {
+    var parts = args ? args.split(/\s+/) : [];
+    if (parts.length < 2) return "💡 사용법\n세종 예약 [장소] [시간]\n예: 세종 예약 새롬복컴 19시";
+
+    var name = getShortName(sender);
+    updateJSON(FILE_RESERVATIONS, [], function(data) {
+        data.push({ user: name, place: parts[0], time: parts[1], date: getTodayKey() });
+        return data;
+    });
+
+    incrementStat("reservations");
+    addAwardLog("예약", sender, "예약 등록: " + parts[0] + " " + parts[1]);
+
+    return "📅 예약 등록 완료\n\n📍 장소: " + parts[0] + "\n🕒 시간: " + parts[1] + "\n👤 등록: " + name;
+}
+
+function showReservations() {
+    var data = loadJSON(FILE_RESERVATIONS, []);
+    if (data.length === 0) return "📭 예약 내역이 없어요.";
+
+    var msg = "━━━ 📅 예약 현황 ━━━\n\n";
+    for (var i = 0; i < data.length; i++) {
+        msg += (i + 1) + ". " + data[i].place + " / " + data[i].time + " / " + data[i].user + "\n";
+    }
+    return msg;
+}
+
+function clearReservations(sender) {
+    if (!isAdmin(sender)) return "🚫 관리자 전용 명령어입니다.";
+    saveJSON(FILE_RESERVATIONS, []);
+    return "🗑️ 예약 목록 초기화 완료";
+}
+
+// =====================================================
+// 🤖 조용한 ReAct 감정 에이전트
+// =====================================================
+
+function loadReactAgentData() {
+    return loadJSON(FILE_REACT_AGENT, { lastGlobal: 0, userLast: {}, dayKey: "", dayCount: 0 });
+}
+
+function saveReactAgentData(data) {
+    saveJSON(FILE_REACT_AGENT, data);
+}
+
+function isProbablyMediaMessage(msg) {
+    var t = String(msg || "").trim();
+    var mediaPrefixes = [
+        "사진", "사진:", "동영상", "동영상:", "이모티콘", "스티커",
+        "음성메시지", "파일", "지도", "연락처", "메시지가 삭제되었습니다",
+        "삭제된 메시지", "투표", "앨범"
+    ];
+    for (var i = 0; i < mediaPrefixes.length; i++) {
+        if (t.indexOf(mediaPrefixes[i]) === 0) return true;
+    }
+    return false;
+}
+
+function isSensitiveReactContext(msg) {
+    var t = String(msg || "").toLowerCase();
+    var sensitive = [
+        "선거", "투표", "정치", "대통령", "국회의원", "시장", "도지사",
+        "정당", "민주당", "국민의힘", "후보", "부정선거", "시위", "전쟁",
+        "사망", "사고", "범죄", "고소", "신고"
+    ];
+    for (var i = 0; i < sensitive.length; i++) {
+        if (t.indexOf(sensitive[i].toLowerCase()) >= 0) return true;
+    }
+    return false;
+}
+
+function isTinyReactionOnly(msg) {
+    var t = String(msg || "").replace(/\s+/g, "").trim();
+    if (t.length <= 2) return true;
+    if (/^[ㅋㅎㅠㅜㅡ~!.?]+$/.test(t)) return true;
+    if (/^[👍👏🙌🙏😂🤣😅😊😉😍😆🔥✨❤️💙💚]+$/.test(t)) return true;
+    return false;
+}
+
+function hasTableTennisContext(msg) {
+    var t = String(msg || "").toLowerCase();
+    var keywords = [
+        "탁구", "벙개", "번개", "복컴", "라켓", "러버", "드라이브",
+        "스매싱", "스매쉬", "커트", "쇼트", "푸시", "서브", "리시브",
+        "연승", "졌", "이겼", "이김", "승리", "패배", "한판", "한 판",
+        "부수", "elo", "에로", "레슨", "관장", "셰이크", "펜홀더",
+        "지금칠", "지금 칠", "칠사람", "칠 사람", "치러", "운동가", "운동 가"
+    ];
+    for (var i = 0; i < keywords.length; i++) {
+        if (t.indexOf(keywords[i].toLowerCase()) >= 0) return true;
+    }
+    return false;
+}
+
+function isLateNight() {
+    var h = new Date().getHours();
+    return (h >= 22 || h < 5);
+}
+
+function shouldRunReactAgent(msg, sender) {
+    if (!REACT_AGENT_ENABLED) return false;
+    if (!msg || msg.indexOf(TRIGGER) === 0) return false;
+    if (String(msg).length < 4) return false;
+    if (String(msg).indexOf("http") >= 0) return false;
+    if (isProbablyMediaMessage(msg)) return false;
+    if (isSensitiveReactContext(msg)) return false;
+    if (isTinyReactionOnly(msg)) return false;
+    if (!loadAPIKey()) return false;
+    if (!hasTableTennisContext(msg)) return false;
+
+    var now = new Date().getTime();
+    var short = getShortName(sender);
+    var today = getTodayKey();
+    var data = loadReactAgentData();
+
+    if (data.dayKey !== today) {
+        data.dayKey = today;
+        data.dayCount = 0;
+    }
+    if (data.dayCount >= REACT_AGENT_DAILY_LIMIT) return false;
+    if (data.lastGlobal && now - data.lastGlobal < REACT_AGENT_GLOBAL_COOLDOWN) return false;
+    if (data.userLast && data.userLast[short] && now - data.userLast[short] < REACT_AGENT_USER_COOLDOWN) return false;
+
+    var rate = isLateNight() ? REACT_NIGHT_RATE : REACT_AGENT_RATE;
+    if (Math.random() >= rate) return false;
+
+    data.lastGlobal = now;
+    if (!data.userLast) data.userLast = {};
+    data.userLast[short] = now;
+    data.dayCount = (data.dayCount || 0) + 1;
+    saveReactAgentData(data);
+    return true;
+}
+
+function maybeRunReactEmotionAgent(msg, sender, replier) {
+    try {
+        if (!shouldRunReactAgent(msg, sender)) return false;
+
+        var currentHour = new Date().getHours();
+        var timeContext = "";
+        if (currentHour >= 22 || currentHour < 5) {
+            timeContext = "현재는 밤 10시 이후 야간/새벽이다. 이 시간에 운동하자고 하면 귀엽고 점잖게 말려라.";
+        } else if (currentHour >= 5 && currentHour < 8) {
+            timeContext = "현재는 이른 아침이다. 너무 과한 텐션은 살짝 놀리되 응원해라.";
+        } else {
+            timeContext = "현재는 일반 활동 시간대이다.";
+        }
+
+        var name = getShortName(sender);
+        var elo = getElo(name);
+        var point = getPointBalance(name);
+
+        var prompt =
+            "너는 세종시 탁구 커뮤니티 단톡방의 따뜻하고 센스 있는 AI 친구 '세종이'다.\n" +
+            "지금은 누군가 탁구/벙개/복컴/경기 관련 이야기를 했다. 여기에만 짧게 반응해라.\n" +
+            "끼어들 가치가 있으면 1~2문장, 최대 3줄로 짧고 다정하게 말해라.\n" +
+            "조금이라도 애매하거나, 굳이 끼어들 필요가 없으면 다른 말 없이 정확히 '패스'라고만 답해라.\n" +
+            "되도록 자주 '패스'를 선택해라. 꼭 필요할 때만 말하는 과묵한 친구다.\n\n" +
+            "[말투]\n- 존댓말, 상냥함, 부드러운 유머\n- 비꼬기보다 귀여운 공감\n- 이모티콘은 1~2개 정도 자연스럽게\n\n" +
+            "[금지]\n- 상처 주는 조롱, 공격적 딴지 금지\n- 외모/가족/정치/선거/성적 농담 금지\n- 길게 설명 금지\n- 도박, 토토 표현 금지\n\n" +
+            "[시간 맥락]\n" + timeContext + "\n\n" +
+            "[회원 정보: 탁구 관련 대화일 때만 참고]\n이름: " + name + ", ELO: " + elo + ", 포인트: " + point + "P\n\n" +
+            "[대화]\n" + sender + ": " + msg;
+
+        var result = callGeminiText(prompt);
+        if (!result) return false;
+
+        result = String(result).trim();
+        if (result === "패스" || result.indexOf("패스") === 0) return false;
+        if (result.length > 260) result = result.substring(0, 260) + "...";
+
+        replier.reply("🤖💬 세종이 한마디\n\n" + result);
+        incrementStat("react_agent_replies");
+        addAwardLog("감정난입", "세종이", result);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// =====================================================
+// 🏓 ELO 기반 승부예측 / 응원픽 (포인트 동시성 보호)
+// =====================================================
+
+function getPointBalance(name) {
+    var pData = loadJSON(FILE_POINT, {});
+    return pData[name] || 0;
+}
+
+function addPointBalance(name, amount) {
+    updateJSON(FILE_POINT, {}, function(pData) {
+        if (!pData[name]) pData[name] = 0;
+        pData[name] += amount;
+        if (pData[name] < 0) pData[name] = 0;
+        return pData;
+    });
+}
+
+function spendPointBalance(name, amount) {
+    var ok = false;
+    updateJSON(FILE_POINT, {}, function(pData) {
+        var current = pData[name] || 0;
+        if (current < amount) { ok = false; return undefined; }
+        pData[name] = current - amount;
+        ok = true;
+        return pData;
+    });
+    return ok;
+}
+
+function samePlayerName(a, b) {
+    return getShortName(normalizeName(a)) === getShortName(normalizeName(b));
+}
+
+function expectedRate(ra, rb) {
+    return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+}
+
+function percentText(rate) {
+    return Math.round(rate * 100) + "%";
+}
+
+function loadPredictionData() {
+    return loadJSON(FILE_PREDICTIONS, { active: false, history: [] });
+}
+
+function savePredictionData(data) {
+    saveJSON(FILE_PREDICTIONS, data);
+}
+
+function normalizePredictionStatus(data) {
+    if (!data || !data.active) return data;
+    var now = new Date().getTime();
+    if (data.status === "open" && now > data.closeAt) {
+        data.status = "closed";
+        savePredictionData(data);
+    }
+    return data;
+}
+
+function predictionStatusText() {
+    var data = normalizePredictionStatus(loadPredictionData());
+    if (!data.active) {
+        return "📭 진행 중인 승부예측이 없어요.\n\n💡 시작: 세종 도전 [상대]\n💡 수동개설: 세종 예측판 [선수1] [선수2]";
+    }
+
+    var remain = Math.max(0, Math.ceil((data.closeAt - new Date().getTime()) / 1000));
+    var picks = data.picks || [];
+    var p1Total = 0;
+    var p2Total = 0;
+    for (var i = 0; i < picks.length; i++) {
+        if (samePlayerName(picks[i].pick, data.p1)) p1Total += picks[i].point;
+        else if (samePlayerName(picks[i].pick, data.p2)) p2Total += picks[i].point;
+    }
+
+    return "🏓🔥 세종 승부예측 현황 🔥🏓\n\n" +
+           "🥇 " + data.p1 + " (" + data.r1 + ") vs " + data.p2 + " (" + data.r2 + ")\n" +
+           "📊 예상승률: " + data.p1 + " " + percentText(data.p1Rate) + " / " + data.p2 + " " + percentText(data.p2Rate) + "\n" +
+           "🎟️ 상태: " + (data.status === "open" ? "픽 접수중" : "픽 마감") + "\n" +
+           "⏱️ 남은 시간: " + remain + "초\n\n" +
+           "📦 응원포인트\n• " + data.p1 + ": " + p1Total + "P\n• " + data.p2 + ": " + p2Total + "P\n\n" +
+           "💡 참여: 세종 픽 [선수] [포인트]\n※ 현금/상품 없는 단톡방 예능 포인트 이벤트입니다 😆";
+}
+
+function openPredictionEvent(p1, p2, createdBy) {
+    p1 = getShortName(normalizeName(p1));
+    p2 = getShortName(normalizeName(p2));
+    if (!p1 || !p2) return "💡 사용법: 세종 예측판 [선수1] [선수2]";
+    if (samePlayerName(p1, p2)) return "❌ 같은 사람끼리는 승부예측을 열 수 없어요.";
+
+    var data = normalizePredictionStatus(loadPredictionData());
+    if (data.active) return "ℹ️ 이미 진행 중인 승부예측이 있어요.\n\n" + predictionStatusText();
+
+    var r1 = getElo(p1);
+    var r2 = getElo(p2);
+    var p1Rate = expectedRate(r1, r2);
+    var p2Rate = 1 - p1Rate;
+    var now = new Date().getTime();
+
+    data = {
+        active: true, status: "open", p1: p1, p2: p2, r1: r1, r2: r2,
+        p1Rate: p1Rate, p2Rate: p2Rate,
+        createdBy: getShortName(createdBy || "세종이"),
+        createdAt: now, closeAt: now + PREDICTION_TIMEOUT,
+        picks: [], history: data.history || []
+    };
+    savePredictionData(data);
+
+    incrementStat("prediction_boards");
+    addAwardLog("승부예측", "세종이", p1 + " vs " + p2 + " 승부예측 오픈");
+
+    return "🚨🏓 세종 승부예측 오픈 🏓🚨\n\n🔥 " + p1 + " vs " + p2 + "\n" +
+           "📊 ELO: " + p1 + " " + r1 + " / " + p2 + " " + r2 + "\n" +
+           "🔮 예상승률: " + p1 + " " + percentText(p1Rate) + " / " + p2 + " " + percentText(p2Rate) + "\n\n" +
+           "🎟️ 참여: 세종 픽 [선수] [포인트]\n예: 세종 픽 " + p1 + " 10\n⏱️ 5분 뒤 픽 마감!\n\n" +
+           "※ 현금/상품 없는 예능용 응원포인트 이벤트입니다 😆🔥";
+}
+
+function openChallengePrediction(sender, args) {
+    args = normalizeName(args);
+    if (!args) return "💡 사용법: 세종 도전 [상대]\n예: 세종 도전 박범근";
+    var p1 = getShortName(sender);
+    var p2 = args.split(/\s+/)[0];
+    return openPredictionEvent(p1, p2, sender);
+}
+
+function openManualPrediction(sender, args) {
+    args = normalizeName(args);
+    if (!args) return predictionStatusText();
+    var parts = args.split(/\s+/);
+    if (parts.length < 2) return "💡 사용법: 세종 예측판 [선수1] [선수2]";
+    return openPredictionEvent(parts[0], parts[1], sender);
+}
+
+function placePredictionPick(sender, args) {
+    var data = normalizePredictionStatus(loadPredictionData());

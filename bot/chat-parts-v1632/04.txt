@@ -1,0 +1,401 @@
+// >>> CHAT_PART 4/9 세종이 v16.3.2 <<<
+        { name: "몽플", loc: "나성동" },
+        { name: "팡쥬르", type: "빵", loc: "종촌동" },
+        { name: "헤이믈", loc: "고운동" }
+    ];
+
+    var picked = shuffle(cafes.slice()).slice(0, 3);
+    var msg = "━━━ ☕ 세종 카페 추천 ━━━\n\n";
+    for (var i = 0; i < picked.length; i++) {
+        msg += (i + 1) + ". " + picked[i].name;
+        if (picked[i].type) msg += " (" + picked[i].type + ")";
+        msg += "\n   📍 " + picked[i].loc + "\n";
+    }
+    msg += "\n여유로운 한 잔 어떠세요? ☕";
+    return msg;
+}
+
+function getYouTube() {
+    return "━━━ 📺 유튜브 추천 ━━━\n\n" +
+           "🏃 피지컬갤러리 - 운동/부상 예방\n" +
+           "🤖 오빠두엑셀 - 업무 자동화\n" +
+           "💰 슈카월드 - 경제 이슈";
+}
+
+function searchClub(keyword) {
+    keyword = normalizeName(keyword || "");
+    var clubs = [
+        { key: "고운동", text: "🏓 고운동 탁구\n\n1. 세종탁구클럽 (사설)\n2. 고운스텝탁구센터\n3. 고운동 복컴 (예약제)\n\n💡 아파트 커뮤니티장은 단지 입주민 전용인 경우가 많아요." },
+        { key: "도담동", text: "🏓 도담동 탁구\n\n1. 세종우리탁구클럽\n2. 도담복컴 (예약제)\n\n💡 복컴 예약: onestop.sejong.go.kr" },
+        { key: "나성동", text: "🏓 나성동 탁구\n\n1. 엘스텝탁구클럽 (리그·레슨)\n2. 박신우탁구클럽\n\n💡 실력대 맞추려면 사설 추천" },
+        { key: "대평동", text: "🏓 대평동 탁구\n\n1. 박범근탁구클럽 ★\n2. 대평동복컴\n\n💡 리그·즐탁 분위기 좋은 편" },
+        { key: "새롬동", text: "🏓 새롬동 탁구\n\n1. 새롬동 복컴\n2. 인근 사설·아파트 커뮤니티\n\n💡 복컴 예약 경쟁 있을 수 있음" },
+        { key: "어진동", text: "🏓 어진동 탁구\n\n1. 어진동 복컴\n2. 인근 사설 클럽" },
+        { key: "보람동", text: "🏓 보람동 탁구\n\n1. 보람동 복컴\n2. 인근 클럽/커뮤니티" },
+        { key: "한솔동", text: "🏓 한솔동 탁구\n\n1. 한솔 인근 복컴·커뮤니티\n2. 사설은 인근 동 이용 많음" },
+        { key: "종촌동", text: "🏓 종촌동 탁구\n\n1. 단지 커뮤니티 탁구장 (입주민)\n2. 인근 복컴·사설\n\n💡 세종 이웃 종촌동" },
+        { key: "집현동", text: "🏓 집현동 탁구\n\n1. 단지 커뮤니티 탁구장 (입주민)\n2. 인근 복컴·사설\n\n💡 세종 이웃 집현동" },
+        { key: "소담동", text: "🏓 소담동 탁구\n\n1. 소담 인근 복컴·커뮤니티\n2. 사설은 나성·보람 쪽 이용 많음" },
+        { key: "아름동", text: "🏓 아름동 탁구\n\n1. 아름 인근 시설·커뮤니티\n2. 고운·종촌 쪽 병행 가능" },
+        { key: "산울동", text: "🏓 산울동 탁구
+
+1. 산울 단지 커뮤니티 탁구장 (입주민 전용인 경우 많음)
+2. 인근 복컴·사설 병행 (보람/소담/나성 쪽)
+3. 방 멤버: 세종 이웃 산울동
+
+💡 외부 방문·실력대 매칭은 사설/복컴이 더 수월한 편" },
+        { key: "복컴", text: "🏓 세종 복컴 탁구 안내\n\n· 예약: onestop.sejong.go.kr\n· 이용료: 저렴 (예: 2시간 2천원대)\n· 보통 14일 전 예약, 1인 횟수 제한\n· 후보: 어진·고운·다정·새롬·보람·반곡·도담 등\n\n💡 아파트 커뮤니티장은 복컴과 별개 (입주민 전용 多)" },
+        { key: "아파트", text: "🏓 아파트 커뮤니티 탁구장\n\n· 단지 시설 → 입주민 전용인 경우 많음\n· 시설·개방 시간은 단지마다 다름\n· '가장 좋은 곳'은 실력·거리·시간 따라 갈림\n\n예: 세종 탁구장 종촌동\n또는 세종 질문 도담동 아파트 탁구장 저녁 추천" }
+    ];
+
+    if (!keyword) {
+        return "💡 사용법: 세종 탁구장 [동이름]\n예: 세종 탁구장 고운동\n\n가능: 고운/도담/나성/대평/새롬/어진/보람/한솔/종촌/집현/소담/아름/복컴/아파트";
+    }
+    for (var i = 0; i < clubs.length; i++) {
+        if (clubs[i].key.indexOf(keyword) >= 0 || keyword.indexOf(clubs[i].key) >= 0) {
+            return clubs[i].text;
+        }
+    }
+    return "❌ 해당 지역 정보가 아직 부족해요.\n가능: 고운/도담/나성/대평/새롬/어진/보람/종촌/집현/복컴/아파트\n또는: 세종 질문 " + keyword + " 탁구장 추천해줘";
+}
+
+// =====================================================
+// 🔥 벙개 (동시성 보호)
+// =====================================================
+
+function uniqNames(arr) {
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < (arr || []).length; i++) {
+        var n = String(arr[i] || "").trim();
+        if (!n || seen[n]) continue;
+        seen[n] = true;
+        out.push(n);
+    }
+    return out;
+}
+
+function todayDateLabel() {
+    var d = new Date();
+    var days = ["일", "월", "화", "수", "목", "금", "토"];
+    return (d.getMonth() + 1) + "." + d.getDate() + "(" + days[d.getDay()] + ")";
+}
+
+function createBungae(sender, args) {
+    args = String(args || "").replace(/\s+/g, " ").trim();
+
+    // "세종 벙개 취소" 가 장소=취소 로 새 벙개 만들어지던 버그 차단
+    if (!args || args === "취소" || args === "종료" || args === "삭제" || args === "닫기") {
+        return cancelBungae(sender);
+    }
+    if (args === "현황" || args === "상태" || args === "확인") {
+        return showBungaeStatus();
+    }
+    if (args.indexOf("취소") === 0 || args.indexOf("종료") === 0) {
+        return cancelBungae(sender);
+    }
+
+    var cur = loadJSON(FILE_BUNGGAE, { host: "", members: [], wait: [], max: 8 });
+    if (cur && cur.host && cur.created === getTodayKey()) {
+        return "⚠️ 이미 진행 중인 벙개가 있어요!\n\n" +
+               showBungaeStatus() + "\n\n" +
+               "💡 새로 열려면 먼저: 세종 벙개취소 (벙주/관리자)\n" +
+               "💡 사람 추가: 세종 추가참가 [닉네임]";
+    }
+
+    var parts = args ? args.split(/\s+/) : [];
+    var banned = { "취소": 1, "종료": 1, "현황": 1, "참가": 1, "추가": 1, "삭제": 1 };
+    var place = parts[0] || "미정";
+    var time = parts[1] || "미정";
+    var maxStr = parts[2] || "8";
+    if (banned[place]) {
+        return "❌ 장소 이름이 이상해요.\n예: 세종 벙개 새롬복컴 10시 8\n취소: 세종 벙개취소";
+    }
+    var max = parseInt(maxStr, 10);
+    if (!max || max < 2) max = 8;
+    if (max > 30) max = 30;
+
+    var hostName = getShortName(sender);
+    var dateStr = todayDateLabel();
+
+    saveJSON(FILE_BUNGGAE, {
+        host: hostName,
+        hostFull: sender,
+        place: place,
+        time: time,
+        max: max,
+        members: [hostName],
+        wait: [],
+        created: getTodayKey(),
+        dateLabel: dateStr
+    });
+
+    incrementStat("bunggae_created");
+    addAwardLog("벙개", sender, "벙개 생성: " + place + " " + time + " 정원 " + max + "명");
+
+    return "━━━ 🏓 벙개 모집 ━━━\n\n" +
+           "📅 " + dateStr + " " + time + "\n" +
+           "📍 장소: " + place + "\n" +
+           "👥 정원: " + max + "명\n\n" +
+           "1️⃣ " + hostName + " (벙주 👑)\n\n" +
+           "💡 참가: 세종 참가\n" +
+           "💡 취소: 세종 참가취소\n" +
+           "💡 현황: 세종 벙개현황\n" +
+           "💡 남 추가(벙주/관리자): 세종 추가참가 [닉]\n" +
+           "💡 벙개 종료: 세종 벙개취소\n" +
+           "🏆 밤 9시 이후 오늘의 벙개 상장 자동 발송";
+}
+
+function joinBungae(sender) {
+    var name = getShortName(sender);
+    var outcome = "";
+
+    updateJSON(FILE_BUNGGAE, { host: "", members: [], wait: [], max: 8 }, function(data) {
+        if (!data.host) {
+            outcome = "❌ 진행 중인 벙개가 없어요.\n💡 열기: 세종 벙개 [장소] [시간]";
+            return undefined;
+        }
+        data.members = uniqNames(data.members || []);
+        data.wait = uniqNames(data.wait || []);
+        if (!data.max || data.max < 2) data.max = 8;
+
+        if (data.members.indexOf(name) >= 0) {
+            outcome = "ℹ️ 이미 참가 중이에요.\n👥 " + data.members.length + "/" + data.max + "명";
+            return undefined;
+        }
+        if (data.wait.indexOf(name) >= 0) {
+            outcome = "ℹ️ 이미 대기 중이에요.\n대기 순번: " + (data.wait.indexOf(name) + 1);
+            return undefined;
+        }
+
+        if (data.members.length >= data.max) {
+            data.wait.push(name);
+            outcome = "⏸️ 정원이 가득 차서 대기 등록됐어요.\n대기 순번: " + data.wait.length;
+            return data;
+        }
+
+        data.members.push(name);
+        outcome = "✅ 벙개 참가 완료!\n\n👥 " + data.members.length + "/" + data.max + "명";
+        if (data.members.length === data.max) {
+            outcome += "\n\n🔥 정원 마감! 벙주 " + (data.host || "") + "님, 인원이 다 찼어요.";
+        }
+        return data;
+    });
+
+    if (outcome.indexOf("✅") === 0) {
+        incrementStat("bunggae_joins");
+        addAwardLog("벙개참가", sender, "벙개 참가");
+    } else if (outcome.indexOf("⏸️") === 0) {
+        addAwardLog("벙개대기", sender, "벙개 대기 등록");
+    }
+    return outcome;
+}
+
+/** 벙주/관리자가 다른 사람 넣기: 세종 추가참가 옥사마 */
+function addMemberToBungae(sender, nickArgs) {
+    var nick = String(nickArgs || "").replace(/\s+/g, " ").trim();
+    if (!nick) {
+        return "💡 사용법: 세종 추가참가 [닉네임]\n예: 세종 추가참가 옥사마\n(벙주 또는 관리자만)";
+    }
+    var name = getShortName(nick) || nick;
+    var outcome = "";
+
+    updateJSON(FILE_BUNGGAE, { host: "", members: [], wait: [], max: 8 }, function(data) {
+        if (!data.host) { outcome = "❌ 진행 중인 벙개가 없어요."; return undefined; }
+
+        var short = getShortName(sender);
+        var isHost = (data.host === short) ||
+            (data.hostFull && String(data.hostFull).indexOf(short) >= 0) ||
+            (String(sender).indexOf(data.host) >= 0);
+        if (!isAdmin(sender) && !isHost) {
+            outcome = "🚫 추가참가는 벙주 또는 관리자만 가능해요.\n일반 참가: 세종 참가";
+            return undefined;
+        }
+
+        data.members = uniqNames(data.members || []);
+        data.wait = uniqNames(data.wait || []);
+        if (!data.max || data.max < 2) data.max = 8;
+
+        if (data.members.indexOf(name) >= 0) {
+            outcome = "ℹ️ " + name + "님은 이미 참가 중이에요.\n👥 " + data.members.length + "/" + data.max + "명";
+            return undefined;
+        }
+
+        var widx = data.wait.indexOf(name);
+        if (widx >= 0) data.wait.splice(widx, 1);
+
+        if (data.members.length >= data.max) {
+            data.wait.push(name);
+            outcome = "⏸️ 정원 가득 → " + name + "님 대기 등록\n대기 " + data.wait.length + " · 정원 " + data.max;
+            return data;
+        }
+
+        data.members.push(name);
+        outcome = "✅ " + name + "님 추가 참가 완료!\n\n👥 " + data.members.length + "/" + data.max + "명\n(등록: " + short + ")";
+        return data;
+    });
+
+    if (outcome.indexOf("✅") === 0) {
+        incrementStat("bunggae_joins");
+        addAwardLog("벙개참가", name, "추가 참가 by " + getShortName(sender));
+    }
+    return outcome;
+}
+
+function leaveBungae(sender) {
+    var name = getShortName(sender);
+    var outcome = "";
+    var promoted = "";
+
+    updateJSON(FILE_BUNGGAE, { host: "", members: [], wait: [], max: 8 }, function(data) {
+        if (!data.host) { outcome = "❌ 진행 중인 벙개가 없어요."; return undefined; }
+        data.members = uniqNames(data.members || []);
+        data.wait = uniqNames(data.wait || []);
+
+        var idx = data.members.indexOf(name);
+        var widx = data.wait.indexOf(name);
+
+        if (idx >= 0) {
+            data.members.splice(idx, 1);
+            if (data.host === name && data.members.length > 0) {
+                data.host = data.members[0];
+            }
+            if (data.wait && data.wait.length > 0 && data.members.length < (data.max || 8)) {
+                promoted = data.wait.shift();
+                data.members.push(promoted);
+            }
+            if (data.members.length === 0) {
+                outcome = "leave_empty";
+                return { host: "", members: [], wait: [], max: 8 };
+            }
+            outcome = "leave_member";
+            return data;
+        }
+
+        if (widx >= 0) {
+            data.wait.splice(widx, 1);
+            outcome = "leave_wait";
+            return data;
+        }
+
+        outcome = "ℹ️ 참가/대기 명단에 없어요.\n현황: 세종 벙개현황";
+        return undefined;
+    });
+
+    if (outcome === "leave_empty") {
+        addAwardLog("벙개취소", sender, "마지막 참가 취소 → 벙개 종료");
+        return "✅ 참가 취소 완료\n(남은 인원 없음 → 벙개 종료)";
+    }
+    if (outcome === "leave_member") {
+        addAwardLog("벙개취소", sender, "벙개 참가 취소");
+        if (promoted) {
+            addAwardLog("벙개참가", promoted, "대기자 자동 승급");
+            return "✅ 참가 취소 완료\n\n⏫ 대기자 " + promoted + "님 자동 참가";
+        }
+        return "✅ 참가 취소 완료";
+    }
+    if (outcome === "leave_wait") {
+        addAwardLog("벙개취소", sender, "벙개 대기 취소");
+        return "✅ 대기 취소 완료";
+    }
+    return outcome;
+}
+
+function showBungaeStatus() {
+    var data = loadJSON(FILE_BUNGGAE, { host: "", members: [], wait: [], max: 8 });
+    if (!data.host) return "❌ 진행 중인 벙개가 없어요.\n💡 열기: 세종 벙개 [장소] [시간]";
+
+    data.members = uniqNames(data.members || []);
+    data.wait = uniqNames(data.wait || []);
+    if (!data.max || data.max < 2) data.max = 8;
+
+    var cnt = data.members.length;
+    var dateStr = data.dateLabel || todayDateLabel();
+
+    var msg = "━━━ 🏓 벙개 현황 ━━━\n\n" +
+              "📅 날짜: " + dateStr + "\n" +
+              "📍 장소: " + (data.place || "미정") + "\n" +
+              "🕒 시간: " + (data.time || "미정") + "\n" +
+              "👑 벙주: " + data.host + "\n" +
+              "👥 인원: " + cnt + "/" + data.max + "\n\n";
+
+    msg += "✅ 참가자 (" + cnt + "명)\n";
+    if (cnt === 0) msg += "(없음)\n";
+    else {
+        for (var i = 0; i < data.members.length; i++) {
+            var mark = (data.members[i] === data.host) ? " 👑" : "";
+            msg += (i + 1) + ". " + data.members[i] + mark + "\n";
+        }
+    }
+    if (data.wait && data.wait.length > 0) {
+        msg += "\n⏸️ 대기자 (" + data.wait.length + "명)\n";
+        for (var j = 0; j < data.wait.length; j++) {
+            msg += (j + 1) + ". " + data.wait[j] + "\n";
+        }
+    }
+    msg += "\n💡 참가: 세종 참가 · 취소: 세종 참가취소\n💡 남 추가: 세종 추가참가 [닉]\n💡 종료: 세종 벙개취소";
+    return msg;
+}
+
+function cancelBungae(sender) {
+    var snapshot = null;
+    var allowed = false;
+
+    updateJSON(FILE_BUNGGAE, { host: "", members: [] }, function(data) {
+        if (!data.host) { snapshot = "none"; return undefined; }
+        var short = getShortName(sender);
+        var isHost = (data.host === short) ||
+            (data.hostFull && String(data.hostFull).indexOf(short) >= 0) ||
+            (String(sender).indexOf(data.host) >= 0);
+        if (!isAdmin(sender) && !isHost) { snapshot = "deny"; return undefined; }
+
+        allowed = true;
+        snapshot = {
+            place: data.place, time: data.time,
+            members: uniqNames(data.members || []).slice()
+        };
+        return { host: "", members: [], wait: [], max: 8 };
+    });
+
+    if (snapshot === "none") return "❌ 진행 중인 벙개가 없어요.";
+    if (snapshot === "deny") return "🚫 벙주 또는 관리자만 종료할 수 있어요.\n본인만 빠지려면: 세종 참가취소";
+
+    if (allowed && snapshot) {
+        if (snapshot.members && snapshot.members.length > 0) {
+            for (var i = 0; i < snapshot.members.length; i++) {
+                addAwardLog("벙개참석자", snapshot.members[i], "오늘 벙개 참석");
+            }
+        }
+        addAwardLog("벙개종료", sender, "벙개 종료: " + snapshot.place + " " + snapshot.time);
+    }
+    return "🗑️ 벙개가 종료됐어요.\n오늘 밤 9시 이후 상장 대상에 반영됩니다.\n\n다시 열기: 세종 벙개 [장소] [시간]";
+}
+
+/**
+ * v16.1: 오래된 벙개 자동 정리 (조용히)
+ * 메신저봇R은 '밤에 자동 실행'이 안 되므로,
+ * 다음 날 누군가 첫 메시지를 보낼 때 어제(이전) 벙개가 남아있으면 조용히 정리한다.
+ * created 날짜가 오늘이 아니면 → 지난 벙개로 보고 참석자 로그만 남기고 비운다.
+ */
+function autoCleanupStaleBungae() {
+    try {
+        var today = getTodayKey();
+        updateJSON(FILE_BUNGGAE, { host: "", members: [], wait: [], max: 8 }, function(data) {
+            if (!data.host) return undefined;               // 진행 중 벙개 없음
+            if (!data.created || data.created === today) return undefined; // 오늘 벙개는 유지
+
+            // 어제 이전 벙개 → 참석자 기록만 남기고 조용히 정리
+            if (data.members && data.members.length > 0) {
+                for (var i = 0; i < data.members.length; i++) {
+                    addAwardLog("벙개참석자", data.members[i], "지난 벙개 자동 정리");
+                }
+            }
+            return { host: "", members: [], wait: [], max: 8 };
+        });
+    } catch (e) {}
+}
+
+// =====================================================
+// 🎯 매칭
+// =====================================================
+

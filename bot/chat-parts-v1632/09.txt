@@ -1,0 +1,258 @@
+// >>> CHAT_PART 9/9 세종이 v16.3.2 <<<
+        saveJSON(FILE_MATCH, { players: [] });
+        saveJSON(FILE_BUNGGAE, { host: "", members: [], wait: [], max: 8 });
+        replier.reply("🗑️ 매칭/벙개 초기화 완료");
+    },
+    "매칭초기화": function(replier, sender) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        saveJSON(FILE_MATCH, { players: [] });
+        replier.reply("🗑️ 매칭 초기화 완료");
+    },
+    "차단": function(replier, sender, args) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        if (!args) { replier.reply("💡 사용법: 세종 차단 [닉네임]"); return; }
+        blockUser(args.trim());
+        replier.reply("🚫 차단 완료: " + args);
+    },
+    "차단해제": function(replier, sender, args) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        if (!args) { replier.reply("💡 사용법: 세종 차단해제 [닉네임]"); return; }
+        unblockUser(args.trim());
+        replier.reply("✅ 차단 해제 완료: " + args);
+    },
+    "관리자추가": function(replier, sender, args) {
+        if (!isAdmin(sender)) { replier.reply("🚫 관리자 전용 명령어입니다."); return; }
+        if (!args) { replier.reply("💡 사용법: 세종 관리자추가 [닉네임]"); return; }
+        addAdmin(args.trim());
+        replier.reply("👑 관리자 추가 완료: " + args);
+    },
+
+    // ── v16.3 웹·주간·점검 ──
+    "플랫폼": function(replier) { replier.reply(platformCard()); },
+    "홈페이지": function(replier) { replier.reply(platformCard()); },
+    "사이트": function(replier) { replier.reply(platformCard()); },
+    "충청이음": function(replier) { replier.reply("충청이음\n" + CHUNGCHEONG_EUM_URL); },
+    "카톡방": function(replier) { replier.reply("카카오 오픈채팅\n" + KAKAO_OPENCHAT_URL); },
+    "오픈채팅": function(replier) { replier.reply("카카오 오픈채팅\n" + KAKAO_OPENCHAT_URL); },
+    "신문": function(replier) { replier.reply(fetchWeeklyDigest()); },
+    "주간": function(replier) { replier.reply(fetchWeeklyDigest()); },
+    "아침신문": function(replier) { replier.reply(fetchWeeklyDigest()); },
+    "헬스체크": function(replier) { replier.reply(healthCheck()); },
+    "점검": function(replier) { replier.reply(healthCheck()); },
+    "매칭가이드": function(replier) { replier.reply(matchGuide()); },
+    "예약링크": function(replier) { replier.reply("📅 세종시 복컴 통합예약\n" + BOOKING_URL + "\n\n보통 14일 전 · 1인 횟수 제한"); }
+};
+
+// =====================================================
+// 🚀 봇 시작
+// =====================================================
+
+function onStartCompile() {
+    try { initMemberDB(); } catch (e) {}
+}
+
+
+// =====================================================
+// 🔤 명령 해석 — 띄어쓴 두·세 단어 명령 자동 합침 (v16.3.1)
+//  예: "벙개 현황" → 벙개현황
+//      "오늘 모집 현황" → 오늘모집 + args 현황
+//      "매칭 시작" → 매칭시작
+// =====================================================
+function resolveCommand(userInput) {
+    userInput = String(userInput || "").replace(/\s+/g, " ").trim();
+    if (!userInput) return { command: "", args: "" };
+
+    var parts = userInput.split(" ");
+    // 긴 후보부터: 3단어 붙임 → 2단어 붙임 → 1단어
+    var maxN = parts.length < 3 ? parts.length : 3;
+    for (var n = maxN; n >= 1; n--) {
+        var joined = parts.slice(0, n).join("");      // 벙개현황
+        var spaced = parts.slice(0, n).join(" ");     // 벙개 현황
+        var rest = parts.slice(n).join(" ");
+
+        if (commands[joined]) {
+            return { command: joined, args: rest };
+        }
+        if (COMMAND_ALIASES[joined]) {
+            return { command: COMMAND_ALIASES[joined], args: rest };
+        }
+        if (COMMAND_ALIASES[spaced]) {
+            return { command: COMMAND_ALIASES[spaced], args: rest };
+        }
+        // commands 에 spaced 키가 있는 경우 (거의 없음)
+        if (commands[spaced]) {
+            return { command: spaced, args: rest };
+        }
+    }
+
+    // 기본: 첫 토큰
+    var cmd = parts[0];
+    if (COMMAND_ALIASES[cmd]) cmd = COMMAND_ALIASES[cmd];
+    return { command: cmd, args: parts.slice(1).join(" ") };
+}
+
+// =====================================================
+// 🎯 메인 응답
+// =====================================================
+
+function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
+    try {
+        if (!msg) return;
+        if (isBlocked(sender)) return;
+
+        try { autoBackupOncePerDay(); } catch (e) {}
+        try { autoCleanupStaleBungae(); } catch (e) {}
+        try { saveWeeklyRankSnapshotIfNewWeek(); } catch (e) {}
+
+        updateMemberDB(sender);
+
+        // 대화 로그 → GAS (실패해도 봇 응답에 영향 없음)
+        try { sendToSheet(room, sender, msg); } catch (e) {}
+
+        // 일반 대화 (트리거 없음)
+        try {
+            if (msg && msg.indexOf(TRIGGER) !== 0) {
+                if (!isProbablyMediaMessage(msg)) {
+                    addAwardLog("대화", sender, msg);
+                }
+                if (maybeSendDailyAward(replier)) return;
+                if (maybeOpenPredictionFromText(msg, replier)) return;
+                if (maybeRunReactEmotionAgent(msg, sender, replier)) return;
+            }
+        } catch (e) {}
+
+        if (msg.indexOf(TRIGGER) !== 0) return;
+
+        if (checkSpam(sender)) {
+            replier.reply("⚠️ 도배 감지!\n5초 후 다시 시도해주세요.");
+            return;
+        }
+
+        var userInput = msg.replace(TRIGGER, "").trim();
+        // "세종질문 xxx" 붙여쓰기 보정
+        if (userInput.indexOf("질문") === 0 && userInput.length > 2 && userInput.charAt(2) !== " ") {
+            userInput = "질문 " + userInput.substring(2).trim();
+        }
+        // 연속 공백 정리
+        userInput = userInput.replace(/\s+/g, " ").trim();
+
+        // ★ v16.3.1: "벙개 현황" "오늘 모집" "매칭 시작" 등 띄어쓰기 명령 인식
+        var resolved = resolveCommand(userInput);
+        var command = resolved.command;
+        var args = resolved.args;
+
+        // 자연어 인원
+        if (userInput.indexOf("몇명") >= 0 || userInput.indexOf("몇 명") >= 0 || userInput.indexOf("인원수") >= 0) {
+            for (var i = 0; i < SEJONG_DONGS.length; i++) {
+                if (userInput.indexOf(SEJONG_DONGS[i]) >= 0) {
+                    replier.reply(getRoomCount(SEJONG_DONGS[i]));
+                    return;
+                }
+            }
+        }
+
+        // 자연어 이웃
+        if (userInput.indexOf("이웃") >= 0 || (userInput.indexOf("누구") >= 0 && userInput.indexOf("사람") >= 0)) {
+            for (var j = 0; j < SEJONG_DONGS.length; j++) {
+                if (userInput.indexOf(SEJONG_DONGS[j]) >= 0) {
+                    replier.reply(getMembersByDong(SEJONG_DONGS[j]));
+                    return;
+                }
+            }
+        }
+
+        // 벙개 전체 취소/종료 (create 오인 방지)
+        if (userInput.indexOf("벙개취소") >= 0 || userInput.indexOf("벙개 취소") >= 0 ||
+            userInput.indexOf("벙개종료") >= 0 || userInput.indexOf("벙개 종료") >= 0 ||
+            (userInput.indexOf("벙개") >= 0 && userInput.indexOf("취소") >= 0 && userInput.indexOf("참가") < 0)) {
+            replier.reply(cancelBungae(sender));
+            return;
+        }
+        // 추가참가 자연어
+        if (userInput.indexOf("추가참가") >= 0 || userInput.indexOf("추가 참가") >= 0 ||
+            userInput.indexOf("벙개참가") >= 0 || userInput.indexOf("대리참가") >= 0 ||
+            userInput.indexOf("추가참가자") >= 0) {
+            var an = userInput;
+            an = an.replace(/추가\s*참가\s*자?/g, " ");
+            an = an.replace(/벙개\s*참가/g, " ");
+            an = an.replace(/대리\s*참가/g, " ");
+            an = an.replace(/\s+/g, " ").trim();
+            replier.reply(addMemberToBungae(sender, an || args));
+            return;
+        }
+        // 벙개 현황 자연어
+        if (userInput.indexOf("벙개") >= 0 && userInput.indexOf("현황") >= 0) {
+            replier.reply(showBungaeStatus());
+            return;
+        }
+
+        // 오늘 칠 사람 자연어
+        if (userInput.indexOf("칠 사람") >= 0 || userInput.indexOf("칠사람") >= 0 || userInput.indexOf("오늘 모집") >= 0) {
+            // "오늘 모집 현황" 등은 args 유지, 빈 args면 현황
+            var trArgs = args;
+            if (!trArgs && userInput.indexOf("현황") >= 0) trArgs = "현황";
+            if (!trArgs && (userInput.indexOf("취소") >= 0 || userInput.indexOf("불참") >= 0)) trArgs = "취소";
+            replier.reply(todayRecruitCommand(sender, trArgs || (userInput.indexOf("칠") >= 0 ? "현황" : "")));
+            return;
+        }
+
+        // 플랫폼 / 신문 자연어
+        if (userInput.indexOf("플랫폼") >= 0 || userInput.indexOf("홈페이지") >= 0 || userInput.indexOf("사이트 주소") >= 0) {
+            replier.reply(platformCard());
+            return;
+        }
+        if (userInput.indexOf("아침신문") >= 0 || userInput.indexOf("주간 신문") >= 0 || (userInput.indexOf("신문") >= 0 && userInput.indexOf("뉴스") < 0)) {
+            replier.reply(fetchWeeklyDigest());
+            return;
+        }
+        if (userInput.indexOf("충청이음") >= 0) {
+            replier.reply("충청이음\n" + CHUNGCHEONG_EUM_URL);
+            return;
+        }
+
+        if (commands[command]) {
+            commands[command](replier, sender, args, room);
+            return;
+        }
+
+        if (userInput.indexOf("고마워") >= 0 || userInput.indexOf("감사") >= 0) {
+            replier.reply("별말씀을요~ 😊 즐탁하세요!");
+            return;
+        }
+        if (userInput.indexOf("안녕") >= 0 || userInput.indexOf("하이") >= 0 || userInput.indexOf("헬로") >= 0) {
+            replier.reply("안녕하세요! 👋\n'세종 도움말' 또는 궁금한 점을 바로 물어보세요.\n예: 세종 아파트 탁구장 어디가 좋아요?");
+            return;
+        }
+
+        // 알 수 없는 입력 → FAQ → 질문형이면 AI
+        if (userInput.length >= 4) {
+            var faq = tryFaqAnswer(userInput);
+            if (faq) {
+                replier.reply("📌 [빠른 안내]\n\n" + faq);
+                return;
+            }
+            var qLike = (userInput.indexOf("?") >= 0 || userInput.indexOf("？") >= 0 ||
+                userInput.indexOf("어디") >= 0 || userInput.indexOf("어떻게") >= 0 ||
+                userInput.indexOf("뭐") >= 0 || userInput.indexOf("추천") >= 0 ||
+                userInput.indexOf("알려") >= 0 || userInput.indexOf("좋") >= 0 ||
+                userInput.indexOf("방법") >= 0 || userInput.indexOf("언제") >= 0 ||
+                userInput.indexOf("얼마") >= 0 || userInput.indexOf("가능") >= 0 ||
+                userInput.indexOf("인가요") >= 0 || userInput.indexOf("할까요") >= 0);
+            if (qLike) {
+                replier.reply(askGemini(userInput, sender));
+                return;
+            }
+        }
+
+        replier.reply("❓ 잘 못 알아들었어요.\n\n• 도움말: 세종 도움말\n• 질문 예: 세종 아파트 탁구장 어디가 좋아요?\n• FAQ: 세종 faq\n• 플랫폼: 세종 플랫폼\n• 점검: 세종 헬스체크");
+
+    } catch (e) {
+        try { replier.reply("❌ 봇 오류 발생\n" + e); } catch (e2) {}
+    }
+}
+
+// =====================================================
+// ✅ FILE INTEGRITY — 세종이 v16.3.1 전체 끝
+// lines 표시용: response() 닫힘 다음에 이 주석이 있으면 잘리지 않은 것
+// CHECKSUM_MARK: SEJONG_BOT_V1632_COMPLETE_EOF
+// =====================================================
