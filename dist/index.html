@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>세종시 어쩌다 운동하는 사람들 — 탁구방</title>
+<title>세종시 어쩌다 운동하는 사람들 — 탁구 시합장</title>
 <meta name="description" content="세종시 어쩌다 운동하는 사람들 · 탁구 커뮤니티 · 실시간 인원 · 코트 지도">
-<meta name="theme-color" content="#0c0f14">
+<meta name="theme-color" content="#0a1210">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -13,19 +13,26 @@
 <style>
 
 :root{
-  --bg:#0c0f14;
-  --bg-elev:#12171f;
-  --bg-soft:#181e28;
-  --card:#141a23;
-  --fg:#eef1f5;
-  --muted:#9aa3b2;
-  --subtle:#6b7382;
-  --line:rgba(238,241,245,.10);
-  --line2:rgba(238,241,245,.16);
-  --accent:#d4784a;
-  --accent-2:#e8a57a;
-  --accent-fg:#0c0f14;
-  --ok:#5d9b7b;
+  /* 시합장 테마 — 코트·관중석·라켓 우드 */
+  --bg:#0a1210;
+  --bg-elev:#101a17;
+  --bg-soft:#16241f;
+  --card:#12201b;
+  --fg:#eef6f1;
+  --muted:#9bb5a8;
+  --subtle:#6d857a;
+  --line:rgba(180,220,200,.10);
+  --line2:rgba(180,220,200,.16);
+  --accent:#ff6b2c;
+  --accent-2:#ffb347;
+  --accent-fg:#0a1210;
+  --ok:#3ecf8e;
+  --court:#1a6b4a;
+  --court-deep:#0f4a32;
+  --wood:#c48a4a;
+  --wood-deep:#8a5a2b;
+  --seat:#1c2430;
+  --ball:#ff6b2c;
   --radius-xs:6px;
   --radius-sm:10px;
   --radius-md:14px;
@@ -45,12 +52,25 @@
 html,body{height:100%}
 body{
   font-family:var(--font);
-  background:var(--bg);
+  background:
+    radial-gradient(1200px 500px at 50% -5%, rgba(26,107,74,.22), transparent 55%),
+    radial-gradient(800px 400px at 100% 40%, rgba(255,107,44,.06), transparent 50%),
+    linear-gradient(180deg, #0c1613 0%, var(--bg) 40%, #080e0c 100%);
   color:var(--fg);
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
   padding-bottom:calc(var(--nav-h) + var(--safe-b) + 12px);
 }
+body::before{
+  content:"";
+  position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 30%, #000 20%, transparent 75%);
+}
+.app{position:relative;z-index:1}
 button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:none;background:none}
 a{color:inherit}
@@ -58,7 +78,7 @@ img{max-width:100%;display:block}
 .tabular{font-variant-numeric:tabular-nums}
 
 /* shell */
-.app{min-height:100%}
+.app{min-height:100%;position:relative;z-index:1}
 .topbar{
   position:sticky;top:0;z-index:40;
   display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -105,18 +125,92 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 .view.on{display:block;animation:in var(--motion-fast) var(--ease)}
 @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-/* hero */
+/* hero = CENTER COURT */
 .hero{
   position:relative;overflow:hidden;
-  border:1px solid var(--line);
+  border:1px solid rgba(62,207,142,.2);
   border-radius:var(--radius-xl);
   background:
-    radial-gradient(900px 280px at 85% -10%, rgba(212,120,74,.18), transparent 55%),
-    radial-gradient(600px 240px at 0% 100%, rgba(93,155,123,.08), transparent 50%),
-    var(--card);
+    radial-gradient(ellipse 90% 70% at 50% 110%, rgba(26,107,74,.55), transparent 55%),
+    linear-gradient(165deg, #0e1c17 0%, #12261e 40%, #0c1814 100%);
   padding:28px 22px 22px;
   margin-bottom:16px;
+  box-shadow:0 0 0 1px rgba(255,107,44,.08), 0 24px 60px rgba(0,0,0,.4);
 }
+.hero::before{
+  content:"";
+  position:absolute;left:50%;bottom:-20%;transform:translateX(-50%);
+  width:min(92%,420px);height:55%;
+  background:
+    linear-gradient(180deg, var(--court) 0%, var(--court-deep) 100%);
+  border-radius:8px;
+  box-shadow:0 0 0 3px rgba(255,255,255,.12), inset 0 0 0 2px rgba(255,255,255,.08);
+  opacity:.9;
+  pointer-events:none;
+}
+.hero::after{
+  content:"";
+  position:absolute;left:50%;bottom:8%;transform:translateX(-50%);
+  width:min(70%,280px);height:2px;
+  background:rgba(255,255,255,.55);
+  box-shadow:0 0 12px rgba(255,255,255,.3);
+  pointer-events:none;
+}
+.hero > *{position:relative;z-index:1}
+.arena-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--accent-2);
+  background:rgba(255,107,44,.12);
+  border:1px solid rgba(255,107,44,.28);
+  padding:4px 10px;border-radius:999px;margin-bottom:10px;
+}
+.court-table{
+  display:none;
+}
+@media(min-width:720px){
+  .court-table{
+    display:block;position:absolute;right:24px;bottom:18px;z-index:0;
+    width:160px;height:100px;opacity:.9;pointer-events:none;
+  }
+}
+.zone-label{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ok);margin-bottom:6px;
+}
+.zone-label::before{
+  content:"";width:8px;height:8px;border-radius:2px;
+  background:var(--accent);box-shadow:0 0 0 3px rgba(255,107,44,.2);
+}
+.arena-zones{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  margin:14px 0 16px;
+}
+@media(min-width:640px){.arena-zones{grid-template-columns:repeat(4,1fr)}}
+.arena-zone{
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  background:linear-gradient(160deg, rgba(26,107,74,.12), var(--card));
+  padding:14px 12px;
+  text-align:left;
+  transition:transform .15s var(--ease), border-color .15s;
+  min-height:96px;
+}
+.arena-zone:hover,.arena-zone:focus-visible{
+  border-color:rgba(255,107,44,.4);
+  transform:translateY(-2px);
+  outline:none;
+}
+.arena-zone .az-ico{
+  width:32px;height:32px;border-radius:10px;
+  display:grid;place-items:center;margin-bottom:8px;
+  background:rgba(255,107,44,.12);color:var(--accent-2);
+  font-size:16px;font-weight:800;
+}
+.arena-zone b{display:block;font-size:13.5px;font-weight:700;margin-bottom:3px}
+.arena-zone small{display:block;font-size:11.5px;color:var(--muted);line-height:1.4}
+
 .hero-kicker{
   display:inline-flex;align-items:center;gap:8px;
   font-size:11.5px;font-weight:600;color:var(--accent-2);
@@ -153,10 +247,12 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 }
 
 .panel{
-  background:var(--card);
-  border:1px solid var(--line);
+  position:relative;
+  background:linear-gradient(180deg, rgba(18,40,32,.92), var(--card));
+  border:1px solid rgba(62,207,142,.14);
   border-radius:var(--radius-lg);
   padding:18px;
+  box-shadow:0 12px 40px rgba(0,0,0,.28);
 }
 .panel-hd{
   display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
@@ -695,6 +791,42 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
   color:var(--accent-2);
 }
 
+
+/* 시합장 도크 · 점수판 느낌 */
+.dock{
+  border-top:1px solid rgba(255,107,44,.2) !important;
+  background:linear-gradient(180deg, rgba(16,28,24,.96), rgba(8,14,12,.98)) !important;
+  box-shadow:0 -8px 32px rgba(0,0,0,.35);
+}
+.dock button.on{
+  background:rgba(255,107,44,.15) !important;
+  color:var(--accent-2) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,107,44,.35);
+}
+.topbar{
+  border-bottom:1px solid rgba(62,207,142,.15) !important;
+  background:color-mix(in oklab, #0a1210 90%, transparent) !important;
+}
+.mark{
+  background:linear-gradient(160deg, var(--court), var(--court-deep)) !important;
+  border-color:rgba(255,255,255,.15) !important;
+  box-shadow:0 0 0 1px rgba(255,107,44,.25);
+}
+.room{
+  background:linear-gradient(160deg, rgba(26,107,74,.15), var(--bg-elev)) !important;
+  border-color:rgba(62,207,142,.15) !important;
+}
+.room .n{color:var(--accent-2) !important}
+.play-card{
+  background:linear-gradient(165deg, #152820, #0e1814) !important;
+  border-color:rgba(255,107,44,.18) !important;
+}
+.play-card .tier{background:rgba(255,107,44,.2);color:var(--accent-2)}
+.footer-note{color:var(--subtle) !important}
+.sister-link{
+  background:linear-gradient(90deg, rgba(26,107,74,.1), transparent) !important;
+}
+
 </style>
 </head>
 <body>
@@ -706,7 +838,7 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
       </div>
       <div>
         <h1>세종시 어쩌다 운동하는 사람들</h1>
-        <p>탁구방 · 조탁 · 벙개 · 이웃</p>
+        <p>시합장 · 조탁 · 벙개 · 이웃</p>
       </div>
     </div>
     <div class="top-actions">
@@ -721,25 +853,59 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
     <!-- HOME -->
     <section class="view on" data-view="home">
       <div class="hero">
-        <div class="hero-kicker"><i></i> 세종 · 탁구 · 우리 동네</div>
-        <h2>인사만 하면<br><em>함께 치는</em> 사람들</h2>
-        <p class="hero-lead">새벽 조탁, 주말 벙개, 동별 이웃. 카톡 방에서 모이고, 여기서 코트·인원·일정을 한눈에 봐요.</p>
+        <div class="arena-badge">CENTER COURT · 시합장 모드</div>
+        <div class="hero-kicker"><i></i> 세종시 어쩌다 운동하는 사람들</div>
+        <h2>코트에 들어오면<br><em>한 팀</em>이 됩니다</h2>
+        <p class="hero-lead">선수 대기석 · 탁구대 · 용품 · 책 · 연습 머신 · 관중석. 카톡 방에서 모이고, 이 시합장에서 인원·일정·지도를 봐요.</p>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
-          <button type="button" class="btn btn-accent" data-go="play">탁구 게임 열기</button>
+          <button type="button" class="btn btn-accent" data-go="play">연습 머신 · 게임</button>
           <button type="button" class="btn btn-ghost" data-go="map">코트 지도</button>
+          <a class="btn btn-primary" href="https://open.kakao.com/o/g51E976e" target="_blank" rel="noopener">선수 대기실(카톡)</a>
         </div>
         <div class="hero-stats">
-          <div class="stat"><div class="n tabular" id="stTotal">—</div><div class="l">동 합계 인원</div></div>
-          <div class="stat"><div class="n tabular" id="stDongs">—</div><div class="l">등록 동</div></div>
-          <div class="stat"><div class="n tabular" id="stNodes">15</div><div class="l">코트 노드</div></div>
+          <div class="stat"><div class="n tabular" id="stTotal">—</div><div class="l">코트 인원</div></div>
+          <div class="stat"><div class="n tabular" id="stDongs">—</div><div class="l">동네 구역</div></div>
+          <div class="stat"><div class="n tabular" id="stNodes">15</div><div class="l">테이블 노드</div></div>
         </div>
+        <!-- decorative mini table (desktop) -->
+        <svg class="court-table" viewBox="0 0 160 100" aria-hidden="true">
+          <rect x="8" y="18" width="144" height="72" rx="4" fill="#1a6b4a" stroke="rgba(255,255,255,.25)" stroke-width="2"/>
+          <line x1="80" y1="18" x2="80" y2="90" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+          <rect x="4" y="14" width="152" height="8" rx="2" fill="#c48a4a"/>
+          <circle cx="52" cy="48" r="5" fill="#ff6b2c"/>
+          <circle cx="108" cy="58" r="5" fill="#ff6b2c" opacity=".7"/>
+        </svg>
+      </div>
+
+      <div class="arena-zones" aria-label="시합장 구역">
+        <button type="button" class="arena-zone" data-go="map">
+          <div class="az-ico">🏓</div>
+          <b>센터 코트</b>
+          <small>지도 · 클럽 · 복컴</small>
+        </button>
+        <button type="button" class="arena-zone" data-scroll="zone-bench">
+          <div class="az-ico">👕</div>
+          <b>선수 대기석</b>
+          <small>동별 인원 · 일정</small>
+        </button>
+        <button type="button" class="arena-zone" data-go="learn">
+          <div class="az-ico">📖</div>
+          <b>탁구 서재</b>
+          <small>초보 5강 · 팁</small>
+        </button>
+        <button type="button" class="arena-zone" data-go="play">
+          <div class="az-ico">⚙️</div>
+          <b>연습 머신</b>
+          <small>테트리스 · 디펜스</small>
+        </button>
       </div>
 
       <div class="panel" style="margin-bottom:14px">
         <div class="panel-hd">
           <div>
+            <div class="zone-label">ZONE · CENTER COURT</div>
             <h3>동네 코트 지도</h3>
-            <p>클럽 · 복컴 · 동 거점 — 탭하면 전체 지도</p>
+            <p>시합장 플로어맵 · 클럽 · 복컴 · 동 거점</p>
           </div>
           <button type="button" class="btn btn-accent btn-sm" data-go="map">전체 지도</button>
         </div>
@@ -758,7 +924,8 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
       <div class="panel" style="margin-bottom:14px">
         <div class="panel-hd">
           <div>
-            <h3>우리 방 홍보 영상</h3>
+            <div class="zone-label">ZONE · HIGHLIGHT REEL</div>
+            <h3>시합장 하이라이트</h3>
             <p>주말 벙개 · 코트 모이는 하루 — 세종의 아침</p>
           </div>
         </div>
@@ -817,8 +984,9 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
       <div class="panel yt-panel" style="margin-bottom:14px">
         <div class="panel-hd">
           <div>
-            <h3>탁구 연습 · 정보 영상</h3>
-            <p>조회수 높은 레슨 모음 · 목록에서 골라 보기</p>
+            <div class="zone-label">ZONE · COACHING SCREEN</div>
+            <h3>코칭 스크린 · 연습 영상</h3>
+            <p>조회수 높은 레슨 · 목록에서 골라 보기</p>
           </div>
         </div>
         <button type="button" class="yt-toggle" id="ytToggle" aria-expanded="false">
@@ -835,8 +1003,9 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
         <div class="panel">
           <div class="panel-hd">
             <div>
-              <h3>실시간 동별 인원</h3>
-              <p>카톡 <span class="tabular">세종 인원</span> 갱신값이 자동 반영됩니다</p>
+              <div class="zone-label" id="zone-bench">ZONE · PLAYERS BENCH</div>
+              <h3>선수 대기석 · 동별 인원</h3>
+              <p>카톡 <span class="tabular">세종 인원</span> · 코트 인원 전광판</p>
             </div>
             <div class="chip" id="liveMeta">동기화 중</div>
           </div>
@@ -849,7 +1018,8 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
         <div class="panel">
           <div class="panel-hd">
             <div>
-              <h3>이번 주 일정</h3>
+              <div class="zone-label">ZONE · MATCH BOARD</div>
+              <h3>시합 · 벙개 보드</h3>
               <p>조탁 · 벙개 · 리그 한눈에</p>
             </div>
           </div>
@@ -1154,7 +1324,7 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
       </div>
     </section>
 
-    <p class="footer-note">세종시 어쩌다 운동하는 사람들 · 탁구방<br>sejong-takgu.pages.dev</p>
+    <p class="footer-note">세종시 어쩌다 운동하는 사람들 · 탁구 시합장<br>sejong-takgu.pages.dev</p>
   </main>
 
   

@@ -1014,3 +1014,13 @@
 })();
 
 /* 1785411644 */
+
+
+  // arena zone scroll
+  document.querySelectorAll("[data-scroll]").forEach(function (el) {
+    el.addEventListener("click", function () {
+      var id = el.getAttribute("data-scroll");
+      var t = document.getElementById(id);
+      if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
