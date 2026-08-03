@@ -827,9 +827,226 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
   background:linear-gradient(90deg, rgba(26,107,74,.1), transparent) !important;
 }
 
+
+/* ── 1 용품 코너 ── */
+.gear-grid{
+  display:grid;grid-template-columns:1fr;gap:10px;
+}
+@media(min-width:560px){.gear-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:900px){.gear-grid{grid-template-columns:repeat(3,1fr)}}
+.gear-card{
+  border:1px solid rgba(196,138,74,.25);
+  border-radius:var(--radius-md);
+  background:
+    linear-gradient(145deg, rgba(196,138,74,.12), transparent 50%),
+    linear-gradient(180deg, #1a1510, #12100e);
+  padding:14px;
+  display:flex;flex-direction:column;gap:8px;
+  min-height:168px;
+  transition:transform .15s var(--ease), border-color .15s;
+}
+.gear-card:hover{transform:translateY(-2px);border-color:rgba(255,179,71,.45)}
+.gear-card .g-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.gear-card .g-ico{
+  width:44px;height:44px;border-radius:12px;
+  display:grid;place-items:center;
+  background:rgba(255,107,44,.15);border:1px solid rgba(255,107,44,.25);
+  font-size:22px;line-height:1;
+}
+.gear-card .g-tag{
+  font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent-2);background:rgba(255,107,44,.12);
+  padding:3px 8px;border-radius:999px;white-space:nowrap;
+}
+.gear-card h4{font-size:14.5px;font-weight:700;letter-spacing:-.02em}
+.gear-card p{font-size:12.5px;color:var(--muted);line-height:1.45;flex:1}
+.gear-card .g-meta{
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  font-size:11px;color:var(--subtle);
+}
+.gear-card .g-meta b{color:var(--ok);font-weight:700}
+.gear-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.gear-tabs button{
+  height:32px;padding:0 12px;border-radius:999px;font-size:12px;font-weight:700;
+  border:1px solid var(--line2);background:var(--bg-soft);color:var(--muted);
+}
+.gear-tabs button.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+
+/* ── 2 탁구 서재 ── */
+.book-shelf{
+  display:grid;grid-template-columns:1fr;gap:10px;
+}
+@media(min-width:560px){.book-shelf{grid-template-columns:repeat(2,1fr)}}
+.book{
+  display:flex;gap:12px;align-items:stretch;
+  border:1px solid rgba(62,207,142,.15);
+  border-radius:var(--radius-md);
+  background:linear-gradient(90deg, #1a120c 0 10px, var(--card) 10px);
+  padding:12px 12px 12px 18px;
+  min-height:110px;
+  transition:border-color .15s;
+}
+.book:hover{border-color:rgba(255,179,71,.35)}
+.book .spine{
+  width:42px;flex:0 0 auto;border-radius:4px 8px 8px 4px;
+  display:grid;place-items:center;text-align:center;
+  font-size:10px;font-weight:800;letter-spacing:.04em;line-height:1.2;
+  color:#1a1008;padding:6px 4px;
+  writing-mode:horizontal-tb;
+  box-shadow:inset -2px 0 0 rgba(0,0,0,.2);
+}
+.book .spine.s1{background:linear-gradient(180deg,#ffb347,#e08a40)}
+.book .spine.s2{background:linear-gradient(180deg,#5d9b7b,#3d7a5c);color:#eef}
+.book .spine.s3{background:linear-gradient(180deg,#6b8cce,#4a6fb0);color:#eef}
+.book .spine.s4{background:linear-gradient(180deg,#c084fc,#8b5cf6);color:#eef}
+.book .spine.s5{background:linear-gradient(180deg,#e07a7a,#c45a5a);color:#eef}
+.book .spine.s6{background:linear-gradient(180deg,#5ec8d6,#3aa8b8);color:#0a1518}
+.book .b-body{min-width:0;flex:1}
+.book .b-body h4{font-size:14px;font-weight:700;margin-bottom:4px}
+.book .b-body p{font-size:12px;color:var(--muted);line-height:1.45}
+.book .b-body .b-foot{margin-top:8px;font-size:11px;color:var(--subtle)}
+.book .b-body .b-foot b{color:var(--accent-2)}
+
+/* ── 3 아케이드 머신 ── */
+.arcade-row{
+  display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px;
+}
+@media(min-width:640px){.arcade-row{grid-template-columns:repeat(2,1fr)}}
+.arcade-machine{
+  position:relative;
+  border-radius:18px 18px 12px 12px;
+  background:linear-gradient(180deg, #2a2030 0%, #141018 40%, #0c0a10 100%);
+  border:2px solid #3d3548;
+  box-shadow:0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
+  padding:12px 12px 14px;
+  overflow:hidden;
+}
+.arcade-machine::before{
+  content:"";position:absolute;left:10%;right:10%;top:0;height:6px;
+  background:linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity:.7;
+}
+.arcade-machine .cab-top{
+  text-align:center;font-size:10px;font-weight:800;letter-spacing:.14em;
+  color:var(--accent-2);margin-bottom:8px;text-transform:uppercase;
+}
+.arcade-machine .screen{
+  border-radius:10px;border:3px solid #1a1520;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,107,44,.2), transparent 55%),
+    linear-gradient(180deg, #0d281f, #061510);
+  min-height:120px;padding:14px 12px;
+  box-shadow:inset 0 0 24px rgba(0,0,0,.5), 0 0 20px rgba(62,207,142,.08);
+}
+.arcade-machine .screen h4{font-size:15px;font-weight:800;color:#e8fff4;margin-bottom:4px}
+.arcade-machine .screen p{font-size:12px;color:#8fb9a8;line-height:1.4;margin-bottom:10px}
+.arcade-machine .cab-btns{display:flex;gap:8px;margin-top:10px;justify-content:center}
+.arcade-machine .cab-btns .btn{min-width:44%;height:36px;font-size:12px}
+.arcade-machine .coin-slot{
+  margin-top:10px;text-align:center;font-size:10px;color:#6a6070;letter-spacing:.08em;
+}
+.play-view-arena .play-featured{
+  border:2px solid rgba(255,107,44,.3) !important;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(255,107,44,.15), transparent 50%),
+    linear-gradient(165deg, #1a1220, #0e1014) !important;
+}
+.play-grid.arcade-cabinets .play-card{
+  border-radius:14px;
+  border:2px solid #3a3344 !important;
+  background:
+    linear-gradient(180deg, #221c2a 0%, #121018 100%) !important;
+  box-shadow:0 8px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  position:relative;
+  padding-top:18px;
+}
+.play-grid.arcade-cabinets .play-card::before{
+  content:"";position:absolute;top:0;left:15%;right:15%;height:3px;
+  background:linear-gradient(90deg, transparent, var(--ok), transparent);
+  border-radius:0 0 4px 4px;
+}
+.play-grid.arcade-cabinets .play-card .pc-ico{
+  font-size:22px;filter:drop-shadow(0 0 8px rgba(255,107,44,.4));
+}
+
+/* ── 4 코트 입장 애니메이션 ── */
+.court-enter{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:center;justify-content:center;
+  background:#050a08;
+  transition:opacity .55s var(--ease), visibility .55s;
+}
+.court-enter.hide{
+  opacity:0;visibility:hidden;pointer-events:none;
+}
+.court-enter .ce-inner{
+  text-align:center;padding:24px;max-width:360px;
+  animation:ceIn .7s var(--ease) both;
+}
+@keyframes ceIn{
+  from{opacity:0;transform:translateY(16px) scale(.96)}
+  to{opacity:1;transform:none}
+}
+.court-enter .ce-table{
+  width:180px;height:110px;margin:0 auto 18px;position:relative;
+  animation:ceTable 1.1s var(--ease) both;
+}
+@keyframes ceTable{
+  from{opacity:0;transform:perspective(400px) rotateX(28deg) translateY(30px)}
+  to{opacity:1;transform:perspective(400px) rotateX(8deg)}
+}
+.court-enter .ce-table svg{width:100%;height:100%;filter:drop-shadow(0 12px 24px rgba(0,0,0,.5))}
+.court-enter .ce-ball{
+  position:absolute;width:14px;height:14px;border-radius:50%;
+  background:var(--ball);box-shadow:0 0 12px rgba(255,107,44,.8);
+  left:38%;top:42%;
+  animation:ceBall 1.4s ease-in-out infinite alternate;
+}
+@keyframes ceBall{
+  from{transform:translate(0,0)}
+  to{transform:translate(36px,8px)}
+}
+.court-enter h2{
+  font-family:var(--display);font-size:26px;font-weight:400;
+  color:#eef6f1;margin-bottom:6px;
+}
+.court-enter h2 em{font-style:italic;color:var(--accent-2)}
+.court-enter p{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.court-enter .ce-bar{
+  height:3px;width:120px;margin:0 auto 16px;border-radius:99px;
+  background:rgba(255,255,255,.08);overflow:hidden;
+}
+.court-enter .ce-bar i{
+  display:block;height:100%;width:0;background:linear-gradient(90deg,var(--court),var(--accent));
+  animation:ceLoad 1.6s var(--ease) forwards;
+}
+@keyframes ceLoad{to{width:100%}}
+.court-enter .btn{min-width:160px}
+@media (prefers-reduced-motion: reduce){
+  .court-enter .ce-inner,.court-enter .ce-table,.court-enter .ce-ball,.court-enter .ce-bar i{animation:none}
+  .court-enter .ce-bar i{width:100%}
+}
+
 </style>
 </head>
 <body>
+<!-- 4 코트 입장 -->
+<div class="court-enter" id="courtEnter" role="dialog" aria-label="코트 입장">
+  <div class="ce-inner">
+    <div class="ce-table" aria-hidden="true">
+      <svg viewBox="0 0 180 110" fill="none">
+        <rect x="10" y="22" width="160" height="78" rx="5" fill="#1a6b4a" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+        <line x1="90" y1="22" x2="90" y2="100" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+        <rect x="6" y="16" width="168" height="10" rx="2" fill="#c48a4a"/>
+      </svg>
+      <span class="ce-ball"></span>
+    </div>
+    <h2>코트에 <em>입장</em>합니다</h2>
+    <p>세종시 어쩌다 운동하는 사람들<br>탁구 시합장</p>
+    <div class="ce-bar" aria-hidden="true"><i></i></div>
+    <button type="button" class="btn btn-accent" id="btnEnterCourt">입장하기</button>
+  </div>
+</div>
 <div class="app">
   <header class="topbar">
     <div class="brand">
@@ -883,20 +1100,75 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
           <b>센터 코트</b>
           <small>지도 · 클럽 · 복컴</small>
         </button>
+        <button type="button" class="arena-zone" data-scroll="zone-gear">
+          <div class="az-ico">🎒</div>
+          <b>용품 코너</b>
+          <small>라켓 · 러버 · 공</small>
+        </button>
+        <button type="button" class="arena-zone" data-scroll="zone-library">
+          <div class="az-ico">📖</div>
+          <b>탁구 서재</b>
+          <small>책 · 가이드</small>
+        </button>
+        <button type="button" class="arena-zone" data-go="play">
+          <div class="az-ico">🕹️</div>
+          <b>연습 머신</b>
+          <small>아케이드 게임</small>
+        </button>
+      </div>
+
+      <!-- 1 용품 코너 -->
+      <div class="panel" id="zone-gear" style="margin-bottom:14px">
+        <div class="panel-hd">
+          <div>
+            <div class="zone-label">ZONE · PRO SHOP</div>
+            <h3>용품 코너</h3>
+            <p>선수 가방 속 · 라켓·러버·공·신발 가이드</p>
+          </div>
+        </div>
+        <div class="gear-tabs" id="gearTabs" role="tablist">
+          <button type="button" class="on" data-gear="all">전체</button>
+          <button type="button" data-gear="racket">라켓</button>
+          <button type="button" data-gear="rubber">러버</button>
+          <button type="button" data-gear="ball">공·용품</button>
+          <button type="button" data-gear="wear">신발·의류</button>
+        </div>
+        <div class="gear-grid" id="gearGrid"></div>
+        <p class="blurb" style="margin:12px 0 0;color:var(--subtle);font-size:12px;line-height:1.45">
+          ※ 추천은 커뮤니티 가이드용이며 특정 브랜드 광고가 아닙니다. 초보는 완성품부터, 중급부터 블레이드·러버 조합을 고민하세요.
+        </p>
+      </div>
+
+      <!-- 2 탁구 서재 미리보기 -->
+      <div class="panel" id="zone-library" style="margin-bottom:14px">
+        <div class="panel-hd">
+          <div>
+            <div class="zone-label">ZONE · LIBRARY</div>
+            <h3>탁구 서재</h3>
+            <p>코트 옆 책장 · 실전 가이드</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" data-go="learn">서재 전체</button>
+        </div>
+        <div class="book-shelf" id="homeBookShelf"></div>
+      </div>
+
+          <b>센터 코트</b>
+          <small>지도 · 클럽 · 복컴</small>
+        </button>
         <button type="button" class="arena-zone" data-scroll="zone-bench">
           <div class="az-ico">👕</div>
           <b>선수 대기석</b>
           <small>동별 인원 · 일정</small>
         </button>
-        <button type="button" class="arena-zone" data-go="learn">
+        <button type="button" class="arena-zone" data-scroll="zone-gear">
+          <div class="az-ico">🎒</div>
+          <b>용품 코너</b>
+          <small>라켓 · 러버 · 공</small>
+        </button>
+        <button type="button" class="arena-zone" data-scroll="zone-library">
           <div class="az-ico">📖</div>
           <b>탁구 서재</b>
-          <small>초보 5강 · 팁</small>
-        </button>
-        <button type="button" class="arena-zone" data-go="play">
-          <div class="az-ico">⚙️</div>
-          <b>연습 머신</b>
-          <small>테트리스 · 디펜스</small>
+          <small>책 · 초보 5강</small>
         </button>
       </div>
 
@@ -1198,18 +1470,29 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 
     <!-- LEARN -->
     <section class="view" data-view="learn">
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-hd">
+          <div>
+            <div class="zone-label">ZONE · LIBRARY</div>
+            <h3>탁구 서재 · 실전 책장</h3>
+            <p>시합장 옆 서가 · 읽으면 바로 코트에 쓰는 가이드</p>
+          </div>
+        </div>
+        <div class="book-shelf" id="learnBookShelf"></div>
+      </div>
       <div class="panel">
         <div class="panel-hd">
           <div>
-            <h3>배움터 · 초보 탈출 5강</h3>
+            <div class="zone-label">ZONE · COACHING</div>
+            <h3>초보 탈출 5강</h3>
             <p>코트에서 바로 쓰는 것만</p>
           </div>
         </div>
-        <details class="lesson" open><summary>1. 라켓 · 러버</summary><div class="body">입문은 <b>완성품 라켓</b>으로 충분합니다. 너무 빠른 러버보다 컨트롤 우선. 3~6개월마다 러버 상태 확인.</div></details>
-        <details class="lesson"><summary>2. 자세 · 발놀림</summary><div class="body">팔로만 치지 말고 <b>허리 회전 + 잔발</b>. 발이 멈추면 공도 멈춥니다.</div></details>
-        <details class="lesson"><summary>3. 포핸드 드라이브</summary><div class="body">아래에서 위로 감아올리기. 힘보다 <b>스윙 궤적과 접촉 시점</b>이 핵심입니다.</div></details>
-        <details class="lesson"><summary>4. 리시브 · 커트</summary><div class="body">하회전은 라켓을 살짝 눕혀 밀어주듯. 먼저 <b>코트에 안정적으로 넘기기</b>.</div></details>
-        <details class="lesson"><summary>5. 경기 감각</summary><div class="body">같은 코스 꾸준히 → 짧은 공/긴 공 섞기. 스매시는 <b>찬스볼에만</b>.</div></details>
+        <details class="lesson" open><summary>1. 라켓 · 러버</summary><div class="body">입문은 <b>완성품 라켓</b>으로 충분합니다. 너무 빠른 러버보다 컨트롤 우선. 3~6개월마다 러버 상태 확인. 용품 코너의 「입문 완성품」 카드를 참고하세요.</div></details>
+        <details class="lesson"><summary>2. 자세 · 발놀림</summary><div class="body">팔로만 치지 말고 <b>허리 회전 + 잔발</b>. 발이 멈추면 공도 멈춥니다. 발구름 리듬을 볼 궤적보다 반 박자 먼저.</div></details>
+        <details class="lesson"><summary>3. 포핸드 드라이브</summary><div class="body">아래에서 위로 감아올리기. 힘보다 <b>스윙 궤적과 접촉 시점</b>이 핵심입니다. 공 뒤에서 문지르듯.</div></details>
+        <details class="lesson"><summary>4. 리시브 · 커트</summary><div class="body">하회전은 라켓을 살짝 눕혀 밀어주듯. 먼저 <b>코트에 안정적으로 넘기기</b>. 욕심 스매시는 실점의 지름길.</div></details>
+        <details class="lesson"><summary>5. 경기 감각</summary><div class="body">같은 코스 꾸준히 → 짧은 공/긴 공 섞기. 스매시는 <b>찬스볼에만</b>. 벙개·조탁이 최고의 실전 교재.</div></details>
       </div>
       <div class="panel" style="margin-top:14px">
         <div class="panel-hd">
@@ -1264,16 +1547,42 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
     </section>
 
     <!-- PLAY / GAMES — 탁구 게임 허브 -->
-    <section class="view" data-view="play">
+    <section class="view play-view-arena" data-view="play">
       <div class="panel-hd" style="padding:0 2px 12px">
         <div>
-          <h3 style="font-size:18px">탁구 게임</h3>
-          <p style="color:var(--subtle);font-size:13px;margin-top:4px">세종 탁구방 감성 · 아케이드급 미니게임 컬렉션</p>
+          <div class="zone-label">ZONE · PRACTICE MACHINES</div>
+          <h3 style="font-size:18px">연습 머신 홀</h3>
+          <p style="color:var(--subtle);font-size:13px;margin-top:4px">시합장 옆 오락실 · 코인 없이 즐탁 머신</p>
+        </div>
+      </div>
+
+      <div class="arcade-row">
+        <div class="arcade-machine">
+          <div class="cab-top">CABINET 01 · FLAGSHIP</div>
+          <div class="screen">
+            <h4>즐탁 테트리스</h4>
+            <p>블록에 방 단어 · 라인 클리어 스매시 FX · BGM</p>
+            <div class="cab-btns">
+              <button type="button" class="btn btn-accent" data-play="tetris">INSERT PLAY</button>
+            </div>
+          </div>
+          <div class="coin-slot">● ● ●  FREE PLAY  ● ● ●</div>
+        </div>
+        <div class="arcade-machine">
+          <div class="cab-top">CABINET 02 · DEFENSE</div>
+          <div class="screen">
+            <h4>코트 타워디펜스</h4>
+            <p>라켓 타워 배치 · 웨이브 공 방어</p>
+            <div class="cab-btns">
+              <button type="button" class="btn btn-accent" data-play="td">INSERT PLAY</button>
+            </div>
+          </div>
+          <div class="coin-slot">● ● ●  FREE PLAY  ● ● ●</div>
         </div>
       </div>
 
       <div class="play-featured">
-        <span class="badge">NEW · FLAGSHIP</span>
+        <span class="badge">MACHINE HALL</span>
         <h3>즐탁 테트리스</h3>
         <p>블록마다 즐탁·조탁·드라이브 같은 방 단어가 붙고, 라인 클리어 때 스매시 이펙트가 터집니다.</p>
         <div class="feat-actions">
@@ -1283,7 +1592,7 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
         <div class="hi" id="tetrisHi">최고 기록 불러오는 중…</div>
       </div>
 
-      <div class="play-grid" id="playGrid">
+      <div class="play-grid arcade-cabinets" id="playGrid">
         <button type="button" class="play-card" data-play="tetris"><span class="tier">HOT</span><span class="pc-ico">▣</span><b>즐탁 테트리스</b><small>단어 블록 · 스매시 클리어</small></button>
         <button type="button" class="play-card" data-play="td"><span class="tier">ARCADE</span><span class="pc-ico">◆</span><b>코트 타워디펜스</b><small>라켓 타워 · 웨이브 공 방어</small></button>
         <button type="button" class="play-card" data-play="runner"><span class="tier">ENDLESS</span><span class="pc-ico">▶</span><b>코트 러너</b><small>네트 점프 · 콤보 질주</small></button>

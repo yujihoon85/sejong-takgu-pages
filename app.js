@@ -996,12 +996,134 @@
     }
   }
 
+
+  // ── 시합장 확장: 용품 · 서재 · 입장 ──
+  var GEAR = [
+    { cat: "racket", icon: "🏓", tag: "입문", name: "완성품 라켓 세트", blurb: "처음 6개월은 조합보다 완성품. 컨트롤 위주 블레이드+러버가 기본.", meta: "초보 · 가성비", tip: "너무 빠른 공격형 피하기" },
+    { cat: "racket", icon: "🪵", tag: "중급", name: "올우드 블레이드", blurb: "감각·컨트롤이 좋아 드라이브 연습에 유리. 세종 방 멤버 추천 많음.", meta: "5~8부", tip: "무게 80~90g대" },
+    { cat: "racket", icon: "⚡", tag: "상급", name: "카본 복합 블레이드", blurb: "스피드·안정 밸런스. 스윙이 자리 잡은 뒤 도전.", meta: "7부↑", tip: "러버 조합 중요" },
+    { cat: "rubber", icon: "🔴", tag: "포핸드", name: "점착·스핀 러버", blurb: "하회전 끌어올리기·드라이브 스핀. 초보는 중간 스피드 스펀지.", meta: "두께 2.0~2.1", tip: "계절마다 점착 관리" },
+    { cat: "rubber", icon: "⚫", tag: "백핸드", name: "텐션 컨트롤 러버", blurb: "블록·카운터·짧은 터치. 백은 다루기 쉬운 쪽을 추천.", meta: "두께 1.9~2.0", tip: "포백 다른 조합 OK" },
+    { cat: "rubber", icon: "🛡️", tag: "수비", name: "롱핌플·안티", blurb: "변화·커트 플레이. 룸메와 맞추고 연습 상대를 구하세요.", meta: "스타일 특화", tip: "규정 확인" },
+    { cat: "ball", icon: "⚪", tag: "공", name: "시합구 40+ 플라스틱", blurb: "클럽·복컴 공과 같은 타입으로 연습해야 감각이 이어집니다.", meta: "ABS 시합구", tip: "싸구려 공은 튕김 다름" },
+    { cat: "ball", icon: "🧹", tag: "관리", name: "클리너 · 보호필름", blurb: "러버 수명 좌우. 칠 때마다 닦고, 보관 시 필름.", meta: "필수 습관", tip: "오일 과다 금지" },
+    { cat: "wear", icon: "👟", tag: "신발", name: "실내 탁구·배드민턴화", blurb: "좌우 스텝·제동. 러닝화보다 코트 전용 추천.", meta: "논슬립", tip: "복컴 규칙 확인" },
+    { cat: "wear", icon: "👕", tag: "의류", name: "통풍 스포츠웨어", blurb: "조탁은 새벽 추위, 복컴은 에어컨. 레이어드가 답.", meta: "새벽 조탁", tip: "여벌 수건" },
+    { cat: "wear", icon: "🎒", tag: "가방", name: "라켓 케이스 · 사각 가방", blurb: "러버 보호+여분 공. 벙개 때 한 손에.", meta: "이동 필수", tip: "이름표 추천" },
+    { cat: "ball", icon: "🤖", tag: "머신", name: "로봇·멀티볼 연습", blurb: "개인 연습 때. 방에서는 사람 랠리가 우선!", meta: "홈·클럽", tip: "각·스핀 조절" }
+  ];
+
+  var BOOKS = [
+    { spine: "s1", title: "초보 탈출 노트", sub: "처음 30일", body: "완성품 고르기, 그립, 기본 스트로크, 복컴 매너까지. 방 초보 필수 코스.", foot: "난이도 · 입문" },
+    { spine: "s2", title: "드라이브의 감각", sub: "스핀 입문", body: "접촉면·궤적·허리 회전. 힘 빼기의 기술. 포핸드를 안정시키는 체크리스트.", foot: "난이도 · 초중급" },
+    { spine: "s3", title: "리시브 사전", sub: "하회전 대응", body: "서브 종류 읽기, 커트·플릭·푸시. 실점 패턴을 줄이는 실전 메모.", foot: "난이도 · 중급" },
+    { spine: "s4", title: "발놀림 워크북", sub: "잔발 훈련", body: "스플릿 스텝, 좌우 교차, 한 발 축. 발이 살아야 공이 산다.", foot: "난이도 · 전 레벨" },
+    { spine: "s5", title: "벙개 운영 가이드", sub: "세종 로컬", body: "모집 멘션, 인원, 복컴 예약, 초보 케어. 우리 방 문화를 글로.", foot: "커뮤니티" },
+    { spine: "s6", title: "시합 멘탈 카드", sub: "한 세트 생각법", body: "점수대별 선택, 타임아웃, 파트너 호흡. 이기려 하기보다 한 점 설계.", foot: "난이도 · 중상급" }
+  ];
+
+  function renderGear(filter) {
+    var grid = $("gearGrid");
+    if (!grid) return;
+    filter = filter || "all";
+    var html = "";
+    GEAR.forEach(function (g) {
+      if (filter !== "all" && g.cat !== filter) return;
+      html += '<article class="gear-card" data-cat="' + esc(g.cat) + '">' +
+        '<div class="g-top"><div class="g-ico" aria-hidden="true">' + g.icon + '</div>' +
+        '<span class="g-tag">' + esc(g.tag) + '</span></div>' +
+        '<h4>' + esc(g.name) + '</h4>' +
+        '<p>' + esc(g.blurb) + '</p>' +
+        '<div class="g-meta"><b>' + esc(g.meta) + '</b> · ' + esc(g.tip) + '</div></article>';
+    });
+    grid.innerHTML = html || '<div class="empty">해당 분류 용품이 없습니다</div>';
+  }
+
+  function renderBooks() {
+    function shelf(id) {
+      var el = $(id);
+      if (!el) return;
+      el.innerHTML = BOOKS.map(function (b) {
+        return '<article class="book">' +
+          '<div class="spine ' + b.spine + '">' + esc(b.sub) + '</div>' +
+          '<div class="b-body"><h4>' + esc(b.title) + '</h4>' +
+          '<p>' + esc(b.body) + '</p>' +
+          '<div class="b-foot"><b>' + esc(b.foot) + '</b></div></div></article>';
+      }).join("");
+    }
+    shelf("homeBookShelf");
+    shelf("learnBookShelf");
+  }
+
+  function wireGearTabs() {
+    var tabs = $("gearTabs");
+    if (!tabs) return;
+    tabs.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-gear]");
+      if (!b) return;
+      tabs.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x === b); });
+      renderGear(b.getAttribute("data-gear"));
+    });
+  }
+
+  function wireArenaScroll() {
+    document.querySelectorAll("[data-scroll]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var id = el.getAttribute("data-scroll");
+        var target = document.getElementById(id);
+        if (target) {
+          // home view first
+          var homeBtn = document.querySelector('.dock button[data-go="home"]');
+          if (homeBtn && !document.querySelector('.view[data-view="home"].on')) {
+            homeBtn.click();
+            setTimeout(function () { target.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80);
+          } else {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      });
+    });
+  }
+
+  function initCourtEnter() {
+    var overlay = $("courtEnter");
+    var btn = $("btnEnterCourt");
+    if (!overlay) return;
+    var seen = false;
+    try { seen = sessionStorage.getItem("pp_court_enter") === "1"; } catch (e) {}
+    function dismiss() {
+      overlay.classList.add("hide");
+      try { sessionStorage.setItem("pp_court_enter", "1"); } catch (e2) {}
+      setTimeout(function () {
+        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      }, 600);
+    }
+    if (seen) {
+      overlay.classList.add("hide");
+      overlay.style.display = "none";
+      return;
+    }
+    if (btn) btn.addEventListener("click", dismiss);
+    // auto after bar anim ~1.8s, still need click OR auto
+    setTimeout(function () {
+      if (overlay && !overlay.classList.contains("hide")) {
+        /* keep until click — optional soft auto */
+      }
+    }, 2000);
+    // double-tap backdrop
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) dismiss();
+    });
+  }
+
+
   // boot
   try { initBgmUi(); } catch (e) {}
   loadLivingGraph().then(function () {
     wireSisterLinks();
     wireYouTubePractice();
     renderGuide();
+    try { renderGear("all"); wireGearTabs(); renderBooks(); wireArenaScroll(); initCourtEnter(); } catch (eArena) {}
     if (me()) afterJoin();
     else $("btnProfile").textContent = "입장";
     loadRooms();
@@ -1012,15 +1134,3 @@
     }, 150);
   });
 })();
-
-/* 1785411644 */
-
-
-  // arena zone scroll
-  document.querySelectorAll("[data-scroll]").forEach(function (el) {
-    el.addEventListener("click", function () {
-      var id = el.getAttribute("data-scroll");
-      var t = document.getElementById(id);
-      if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  });
