@@ -1088,32 +1088,68 @@
   function initCourtEnter() {
     var overlay = $("courtEnter");
     var btn = $("btnEnterCourt");
+    var skip = $("btnSkipEnter");
     if (!overlay) return;
+
+    var greets = [
+      { t: "안녕하세요!", s: "오늘도 즐탁 한 판 하실래요?" },
+      { t: "어서 오세요!", s: "코트에 오신 걸 환영합니다" },
+      { t: "반갑습니다!", s: "세종 탁구 이웃들이 기다리고 있어요" },
+      { t: "하이, 탁구인!", s: "라켓 챙기셨나요? 한 세트 가시죠" },
+      { t: "좋은 하루예요!", s: "조탁·벙개·랠리, 오늘도 즐탁!" }
+    ];
+    var hour = new Date().getHours();
+    if (hour < 10) greets.unshift({ t: "좋은 아침이에요!", s: "새벽 조탁 가시는 분 손!" });
+    else if (hour >= 18) greets.unshift({ t: "수고 많으셨어요!", s: "퇴근 후 한 판, 머리가 맑아져요" });
+
+    var g = greets[Math.floor(Math.random() * greets.length)];
+    var title = $("ceGreetTitle");
+    var sub = $("ceGreetSub");
+    if (title) title.innerHTML = esc(g.t).replace(/!/, "!").replace(/(안녕하세요|어서 오세요|반갑습니다|하이, 탁구인|좋은 하루예요|좋은 아침이에요|수고 많으셨어요)/, "<em>$1</em>");
+    // simpler: wrap whole short greet
+    if (title) {
+      var raw = g.t;
+      var em = raw.replace(/!$/, "");
+      title.innerHTML = "<em>" + esc(em) + "</em>" + (raw.slice(-1) === "!" ? "!" : "");
+    }
+    if (sub) sub.textContent = g.s;
+
     var seen = false;
-    try { seen = sessionStorage.getItem("pp_court_enter") === "1"; } catch (e) {}
+    try { seen = sessionStorage.getItem("pp_court_enter_v2") === "1"; } catch (e) {}
+
     function dismiss() {
+      if (!overlay || overlay.classList.contains("hide")) return;
       overlay.classList.add("hide");
-      try { sessionStorage.setItem("pp_court_enter", "1"); } catch (e2) {}
+      try { sessionStorage.setItem("pp_court_enter_v2", "1"); } catch (e2) {}
       setTimeout(function () {
         if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-      }, 600);
+      }, 700);
     }
+
     if (seen) {
       overlay.classList.add("hide");
       overlay.style.display = "none";
       return;
     }
+
     if (btn) btn.addEventListener("click", dismiss);
-    // auto after bar anim ~1.8s, still need click OR auto
-    setTimeout(function () {
-      if (overlay && !overlay.classList.contains("hide")) {
-        /* keep until click — optional soft auto */
-      }
-    }, 2000);
-    // double-tap backdrop
+    if (skip) skip.addEventListener("click", dismiss);
     overlay.addEventListener("click", function (e) {
-      if (e.target === overlay) dismiss();
+      if (e.target === overlay || e.target.classList.contains("ce-spot")) dismiss();
     });
+    document.addEventListener("keydown", function onKey(e) {
+      if (e.key === "Escape" || e.key === "Enter") {
+        dismiss();
+        document.removeEventListener("keydown", onKey);
+      }
+    });
+    // 랠리 감상 후 살짝 강조 (자동 입장은 하지 않음 — 인사 버튼 유도)
+    setTimeout(function () {
+      if (btn && !overlay.classList.contains("hide")) {
+        btn.style.transform = "scale(1.04)";
+        setTimeout(function () { if (btn) btn.style.transform = ""; }, 400);
+      }
+    }, 2200);
   }
 
 
