@@ -1191,38 +1191,122 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
   .ce-ball3d{transform:translate3d(0,-20px,30px)}
 }
 
+
+/* Three.js greeting HUD */
+.court-enter{padding:0}
+.ce-canvas{
+  position:absolute;inset:0;width:100%;height:100%;
+  display:block;z-index:0;
+  background:#050a08;
+}
+.ce-vignette{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 85% 70% at 50% 42%, transparent 40%, rgba(0,0,0,.4) 100%),
+    linear-gradient(180deg, rgba(0,0,0,.2) 0%, transparent 25%, transparent 50%, rgba(0,0,0,.72) 100%);
+}
+.ce-hud{
+  position:absolute;left:0;right:0;bottom:0;z-index:3;
+  padding:0 20px calc(28px + env(safe-area-inset-bottom,0px));
+  text-align:center;
+  pointer-events:none;
+}
+.ce-hud .ce-actions,
+.ce-hud .ce-skip,
+.ce-hud .btn{pointer-events:auto}
+.ce-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:10px;font-weight:800;letter-spacing:.16em;
+  color:var(--accent-2);
+  background:rgba(255,107,44,.12);
+  border:1px solid rgba(255,107,44,.35);
+  padding:5px 12px;border-radius:999px;margin-bottom:12px;
+  backdrop-filter:blur(8px);
+  animation:ceFadeUp .7s .2s var(--ease) both;
+}
+.ce-badge::before{
+  content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 0 0 rgba(62,207,142,.6);
+  animation:cePulse 1.6s ease-out infinite;
+}
+@keyframes cePulse{
+  0%{box-shadow:0 0 0 0 rgba(62,207,142,.55)}
+  70%{box-shadow:0 0 0 10px rgba(62,207,142,0)}
+  100%{box-shadow:0 0 0 0 rgba(62,207,142,0)}
+}
+.ce-hud .ce-hello h2{
+  font-family:var(--display);font-size:clamp(28px,7vw,40px);font-weight:400;
+  color:#fff;margin:0;line-height:1.15;
+  text-shadow:0 6px 40px rgba(0,0,0,.65);
+  animation:ceFadeUp .8s .35s var(--ease) both;
+}
+.ce-hud .ce-hello h2 em{font-style:italic;color:var(--accent-2)}
+.ce-hud .line2{
+  display:block;margin-top:10px;
+  font-size:15px;font-weight:600;color:#b8e0c8;
+  letter-spacing:-.01em;
+  animation:ceFadeUp .7s .55s var(--ease) both;
+}
+.ce-hud .ce-sub{
+  font-size:12.5px;color:rgba(200,220,210,.75);margin:12px 0 18px;line-height:1.5;
+  animation:ceFadeUp .6s .7s var(--ease) both;
+}
+.ce-cta{
+  min-width:min(280px,90vw)!important;height:48px!important;
+  font-size:15px!important;border-radius:14px!important;
+  box-shadow:0 12px 40px rgba(255,107,44,.45), 0 0 0 1px rgba(255,255,255,.1) inset !important;
+  animation:ceFadeUp .6s .85s var(--ease) both;
+}
+.ce-hud .ce-skip{
+  display:block;margin:12px auto 0;
+  font-size:12.5px;color:rgba(255,255,255,.45);
+  text-decoration:underline;background:none;border:0;cursor:pointer;
+  animation:ceFadeUp .5s 1s var(--ease) both;
+}
+.ce-hud .ce-skip:hover{color:#fff}
+.ce-tech{
+  margin-top:14px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(255,255,255,.28);
+  animation:ceFadeUp .5s 1.1s var(--ease) both;
+}
+.court-enter .ce-stage{display:none}
+.court-enter.fallback-on .ce-canvas{display:none}
+.court-enter.fallback-on .ce-fallback{display:block}
+.court-enter.fallback-on .ce-fallback[hidden]{display:block}
+.ce-fallback{position:absolute;inset:0;z-index:0}
+
 </style>
 </head>
 <body>
-<!-- 4 3D 탁구 인사 입장 -->
+<!-- 4 AAA-lite Three.js 3D 인사 -->
 <div class="court-enter" id="courtEnter" role="dialog" aria-modal="true" aria-label="코트 입장 인사">
-  <div class="ce-spot" aria-hidden="true"></div>
-  <div class="ce-inner">
+  <canvas id="ceCanvas" class="ce-canvas" aria-hidden="true"></canvas>
+  <div class="ce-vignette" aria-hidden="true"></div>
+  <div class="ce-hud">
+    <div class="ce-badge">SEJONG COURT · ONLINE</div>
+    <div class="ce-hello">
+      <h2 id="ceGreetTitle"><em>안녕하세요</em>!</h2>
+      <span class="line2" id="ceGreetSub">오늘도 즐탁 한 판 하실래요?</span>
+    </div>
+    <p class="ce-sub">세종시 어쩌다 운동하는 사람들 · 탁구 시합장</p>
+    <div class="ce-actions">
+      <button type="button" class="btn btn-accent ce-cta" id="btnEnterCourt">인사 받고 입장</button>
+      <button type="button" class="ce-skip" id="btnSkipEnter">건너뛰기</button>
+    </div>
+    <p class="ce-tech">WebGL · Three.js 실시간 렌더</p>
+  </div>
+  <!-- CSS fallback stage (hidden when WebGL ok) -->
+  <div class="ce-fallback" id="ceFallback" hidden>
     <div class="ce-stage" aria-hidden="true">
       <div class="ce-world">
         <div class="ce-floor"></div>
         <div class="ce-net"></div>
-        <div class="ce-net-top"></div>
-        <div class="ce-paddle left"><div class="face"></div><div class="handle"></div></div>
-        <div class="ce-paddle right"><div class="face"></div><div class="handle"></div></div>
         <div class="ce-ball3d"></div>
       </div>
-      <div class="ce-players">
-        <div class="ce-player p1"><div class="arm l"></div><div class="arm r"></div><div class="body"></div><div class="head"></div></div>
-        <div class="ce-player p2"><div class="arm l"></div><div class="arm r"></div><div class="body"></div><div class="head"></div></div>
-      </div>
-    </div>
-    <div class="ce-hello">
-      <h2 id="ceGreetTitle">안녕하세요!</h2>
-      <span class="line2" id="ceGreetSub">오늘도 즐탁 한 판 하실래요?</span>
-    </div>
-    <p class="ce-sub">세종시 어쩌다 운동하는 사람들 · 탁구 시합장<br>코트에 들어오신 걸 환영해요</p>
-    <div class="ce-actions">
-      <button type="button" class="btn btn-accent" id="btnEnterCourt">인사 받고 입장</button>
-      <button type="button" class="ce-skip" id="btnSkipEnter">건너뛰기</button>
     </div>
   </div>
 </div>
+
 <div class="app">
   <header class="topbar">
     <div class="brand">
@@ -1875,7 +1959,15 @@ main{max-width:1120px;margin:0 auto;padding:18px 16px 28px}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./games.js?v=6"></script>
+<script src="three.min.js"></script>
+<script src="enter3d.js"></script>
 <script src="./app.js?v=4"></script>
+
+<a href="game.html" style="position:fixed;right:14px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:40;
+  background:linear-gradient(135deg,#ff8a1e,#e23b3b);color:#fff;font-weight:800;font-size:14px;
+  padding:12px 16px;border-radius:999px;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.35);
+  font-family:system-ui,-apple-system,sans-serif">🏓 게임센터</a>
+
 </body>
 </html>
 

@@ -1,0 +1,979 @@
+/**
+ * ═══════════════════════════════════════════════════════
+ *  세종탁구방 플랫폼 백엔드  v1.4  (Google Apps Script)
+ *  — 세종이 v16.3 챗봇 + 웹 플랫폼 공용 API 전체 합본
+ *
+ *  기능
+ *  - 가입자 / 라운지 게시판 / 대화로그 / 소문
+ *  - 방인원: rooms · roomCount · updateRoom
+ *  - 오늘모집: todayRecruit (GET 조회 / POST 저장)  ★ v1.4
+ *  - 주간: weekly 조회 · weeklyDigest 생성 (Gemini 선택)
+ *  - 헬스: action=health 또는 action 없음
+ *
+ *  [설치 — 그대로 따라 하세요]
+ *  1) 스프레드시트 → 확장 프로그램 → Apps Script
+ *  2) Code.gs 기존 내용 전부 삭제 → 이 파일 전체 붙여넣기
+ *  3) (선택) 프로젝트 설정 → 스크립트 속성
+ *        GEMINI_API_KEY = (Gemini 키)
+ *  4) 편집기에서 setup() 선택 → 실행 1회 (시트 자동 생성)
+ *  5) (선택) createWeeklyTrigger() 실행 → 매주 월 06시 분석
+ *  6) 배포 → 새 배포 → 유형: 웹 앱
+ *     - 실행: 나
+ *     - 액세스: 모든 사용자
+ *  7) 나온 URL 을
+ *     - 메신저봇 GAS_URL
+ *     - 플랫폼 BOARD / API URL
+ *     에 동일하게 넣기 → 반드시 "새 버전" 으로 재배포
+ *
+ *  [테스트 URL]
+ *  (웹앱URL)?action=health
+ *  (웹앱URL)?action=rooms
+ *  (웹앱URL)?action=roomCount&room=종촌동
+ *  (웹앱URL)?action=todayRecruit
+ *  (웹앱URL)?action=weekly
+ *  (웹앱URL)?action=gameRank&limit=10
+ * ═══════════════════════════════════════════════════════
+ */
+
+// ── 시트 스키마 ──
+var SHEETS = {
+  "가입자":   ["가입시각", "닉네임", "운동경력", "부수", "목표"],
+  "게시글":   ["시각", "글ID", "닉네임", "내용"],
+  "댓글":     ["시각", "글ID", "닉네임", "내용"],
+  "대화로그": ["시각", "방이름", "닉네임", "메시지"],
+  "소문":     ["시각", "닉네임", "내용", "상태"],
+  "주간":     ["생성시각", "데이터(JSON)"],
+  "방인원":   ["방이름", "현재인원", "마지막업데이트", "비고"],
+  "오늘모집": ["날짜", "장소", "시간", "벙주", "멤버(JSON)", "수정시각", "비고"],
+  "게임점수": ["시각", "닉네임", "게임", "점수", "최고점"]
+};
+
+// 시트를 스크립트에 묶지 않았을 때만 채우세요
+// (스프레드시트 URL 중 /d/ 와 /edit 사이 긴 ID)
+var SS_ID = "";
+
+var API_VERSION = "1.4.0";
+
+// ══════════════════════════════════════
+//  시트 도우미
+// ══════════════════════════════════════
+
+function ss() {
+  if (SS_ID) return SpreadsheetApp.openById(SS_ID);
+  var s = SpreadsheetApp.getActiveSpreadsheet();
+  if (!s) {
+    throw new Error("연결된 시트가 없습니다. SS_ID에 시트 ID를 넣거나, 시트 안에서 스크립트를 여세요.");
+  }
+  return s;
+}
+
+function sheet(name) {
+  var sh = ss().getSheetByName(name);
+  if (!sh) {
+    sh = ss().insertSheet(name);
+    var headers = SHEETS[name] || ["시각", "내용"];
+    sh.appendRow(headers);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function setup() {
+  var keys = Object.keys(SHEETS);
+  for (var i = 0; i < keys.length; i++) {
+    sheet(keys[i]);
+  }
+  ensureRoomSheet_();
+  ensureTodayRecruitSheet_();
+  ensureGameSheet_();
+  Logger.log("시트 준비 완료! API v" + API_VERSION);
+}
+
+function ensureRoomSheet_() {
+  var sh = sheet("방인원");
+  var h1 = String(sh.getRange(1, 1).getValue() || "");
+  if (h1 !== "방이름") {
+    sh.clear();
+    sh.appendRow(SHEETS["방인원"]);
+    sh.setFrozenRows(1);
+  }
+}
+
+function ensureTodayRecruitSheet_() {
+  var sh = sheet("오늘모집");
+  var h1 = String(sh.getRange(1, 1).getValue() || "");
+  if (h1 !== "날짜") {
+    sh.clear();
+    sh.appendRow(SHEETS["오늘모집"]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function todayKeyKst_() {
+  return Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
+}
+
+// ══════════════════════════════════════
+//  방인원 API
+// ══════════════════════════════════════
+
+/** 방인원 전체 목록 (인원 많은 순) */
+function listRooms_() {
+  ensureRoomSheet_();
+  var sh = sheet("방인원");
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+
+  var values = sh.getRange(2, 1, last, 4).getValues();
+  var out = [];
+  for (var i = 0; i < values.length; i++) {
+    var name = String(values[i][0] || "").trim();
+    if (!name) continue;
+
+    var count = Number(values[i][1]);
+    if (isNaN(count)) count = 0;
+
+    var updated = "";
+    if (values[i][2]) {
+      var d = new Date(values[i][2]);
+      if (!isNaN(d.getTime())) {
+        updated = d.toISOString();
+      } else {
+        updated = String(values[i][2]);
+      }
+    }
+
+    out.push({
+      room: name,
+      count: count,
+      updated: updated,
+      note: String(values[i][3] || "")
+    });
+  }
+
+  out.sort(function (a, b) {
+    return b.count - a.count;
+  });
+  return out;
+}
+
+/** 단건 찾기 — 완전일치 우선, 부분일치 허용 */
+function findRoomRow_(roomName) {
+  roomName = String(roomName || "").trim();
+  if (!roomName) return null;
+
+  var list = listRooms_();
+  var i;
+  for (i = 0; i < list.length; i++) {
+    if (list[i].room === roomName) return list[i];
+  }
+  for (i = 0; i < list.length; i++) {
+    if (
+      list[i].room.indexOf(roomName) >= 0 ||
+      roomName.indexOf(list[i].room) >= 0
+    ) {
+      return list[i];
+    }
+  }
+  return null;
+}
+
+/** 시트에서 방이름 행 번호 (2부터, 없으면 -1) */
+function findRoomSheetRow_(roomName) {
+  roomName = String(roomName || "").trim();
+  var sh = sheet("방인원");
+  var last = sh.getLastRow();
+  if (last < 2) return -1;
+  var col = sh.getRange(2, 1, last, 1).getValues();
+  for (var i = 0; i < col.length; i++) {
+    if (String(col[i][0] || "").trim() === roomName) {
+      return i + 2;
+    }
+  }
+  for (var j = 0; j < col.length; j++) {
+    var n = String(col[j][0] || "").trim();
+    if (!n) continue;
+    if (n.indexOf(roomName) >= 0 || roomName.indexOf(n) >= 0) {
+      return j + 2;
+    }
+  }
+  return -1;
+}
+
+/**
+ * 인원 업데이트 — 있으면 수정, 없으면 추가
+ */
+function upsertRoom_(roomName, count, note) {
+  ensureRoomSheet_();
+  roomName = String(roomName || "").trim();
+  count = Number(count);
+  if (!roomName) throw new Error("room 필요");
+  if (isNaN(count) || count < 0) throw new Error("count 숫자 필요");
+
+  note = String(note || "");
+  var now = new Date();
+  var sh = sheet("방인원");
+  var row = findRoomSheetRow_(roomName);
+
+  if (row > 0) {
+    var existingName = String(sh.getRange(row, 1).getValue() || roomName).trim();
+    sh.getRange(row, 1, row, 4).setValues([[existingName, count, now, note]]);
+    return {
+      room: existingName,
+      count: count,
+      updated: now.toISOString(),
+      note: note,
+      created: false
+    };
+  }
+
+  sh.appendRow([roomName, count, now, note]);
+  return {
+    room: roomName,
+    count: count,
+    updated: now.toISOString(),
+    note: note,
+    created: true
+  };
+}
+
+// ══════════════════════════════════════
+//  오늘모집 API  ★ v1.4
+// ══════════════════════════════════════
+
+function getTodayRecruit_(date) {
+  var sh = ensureTodayRecruitSheet_();
+  date = String(date || "").trim();
+  if (!date) date = todayKeyKst_();
+
+  var last = sh.getLastRow();
+  if (last < 2) {
+    return { ok: true, date: date, place: "", time: "", host: "", members: [], count: 0 };
+  }
+
+  var values = sh.getRange(2, 1, last, 7).getValues();
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0]).trim() === date) {
+      var members = [];
+      try {
+        members = JSON.parse(values[i][4] || "[]");
+      } catch (e) {
+        members = [];
+      }
+      if (!Array.isArray(members)) members = [];
+      var updated = "";
+      if (values[i][5]) {
+        var d = new Date(values[i][5]);
+        updated = !isNaN(d.getTime()) ? d.toISOString() : String(values[i][5]);
+      }
+      return {
+        ok: true,
+        date: date,
+        place: String(values[i][1] || ""),
+        time: String(values[i][2] || ""),
+        host: String(values[i][3] || ""),
+        members: members,
+        count: members.length,
+        updated: updated,
+        note: String(values[i][6] || "")
+      };
+    }
+  }
+  return { ok: true, date: date, place: "", time: "", host: "", members: [], count: 0 };
+}
+
+function upsertTodayRecruit_(data) {
+  var sh = ensureTodayRecruitSheet_();
+  data = data || {};
+  var date = String(data.date || "").trim();
+  if (!date) date = todayKeyKst_();
+
+  var place = String(data.place || "").trim();
+  var time = String(data.time || "").trim();
+  var host = String(data.host || "").trim();
+  var note = String(data.note || "").trim();
+
+  var members = data.members || [];
+  if (typeof members === "string") {
+    try {
+      members = JSON.parse(members);
+    } catch (e1) {
+      members = String(members).split(/[,\n]/).map(function (s) {
+        return String(s || "").trim();
+      }).filter(Boolean);
+    }
+  }
+  if (!Array.isArray(members)) members = [];
+  // 중복 제거 + 공백 정리
+  var seen = {};
+  var clean = [];
+  for (var m = 0; m < members.length; m++) {
+    var name = String(members[m] || "").trim();
+    if (!name || seen[name]) continue;
+    seen[name] = true;
+    clean.push(name);
+  }
+  members = clean;
+
+  var last = sh.getLastRow();
+  var row = -1;
+  if (last >= 2) {
+    var dates = sh.getRange(2, 1, last, 1).getValues();
+    for (var i = 0; i < dates.length; i++) {
+      if (String(dates[i][0]).trim() === date) {
+        row = i + 2;
+        break;
+      }
+    }
+  }
+
+  var now = new Date();
+  var values = [date, place, time, host, JSON.stringify(members), now, note];
+  if (row > 0) {
+    sh.getRange(row, 1, 1, 7).setValues([values]);
+  } else {
+    sh.appendRow(values);
+  }
+
+  return {
+    ok: true,
+    date: date,
+    place: place,
+    time: time,
+    host: host,
+    members: members,
+    count: members.length,
+    updated: now.toISOString(),
+    note: note
+  };
+}
+
+
+// ══════════════════════════════════════
+//  게임 점수 · 랭킹  ★ v1.4
+// ══════════════════════════════════════
+
+var GAME_KEYS = { quiz: "탁구 퀴즈", pong: "핑퐁 아케이드", card: "카드 짝맞추기", word: "낱말 퍼즐" };
+
+function ensureGameSheet_() {
+  var sh = sheet("게임점수");
+  var h1 = String(sh.getRange(1, 1).getValue() || "");
+  if (h1 !== "시각") {
+    sh.clear();
+    sh.appendRow(SHEETS["게임점수"]);
+    sh.setFrozenRows(1);
+  }
+}
+
+/** POST gameScore — 닉별 게임 최고점 갱신 + 순위 반환 */
+function saveGameScore_(n, game, score) {
+  ensureGameSheet_();
+  n = String(n || "").trim().slice(0, 40);
+  game = String(game || "").trim().toLowerCase();
+  score = Number(score) || 0;
+  if (!n) throw new Error("닉네임(n) 필요");
+  if (!GAME_KEYS[game]) throw new Error("알 수 없는 게임: " + game);
+  if (score < 0) score = 0;
+  if (score > 999999) score = 999999;
+
+  var sh = sheet("게임점수");
+  var last = sh.getLastRow();
+  var now = new Date();
+  var best = score;
+  var foundRow = 0;
+
+  if (last >= 2) {
+    var vals = sh.getRange(2, 1, last - 1, 5).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      var rn = String(vals[i][1] || "").trim();
+      var rg = String(vals[i][2] || "").trim().toLowerCase();
+      if (rn === n && rg === game) {
+        foundRow = i + 2;
+        var prevBest = Number(vals[i][4]) || Number(vals[i][3]) || 0;
+        best = Math.max(prevBest, score);
+        break;
+      }
+    }
+  }
+
+  if (foundRow) {
+    sh.getRange(foundRow, 1, 1, 5).setValues([[now, n, game, score, best]]);
+  } else {
+    sh.appendRow([now, n, game, score, best]);
+  }
+
+  var ranking = listGameRank_(game, 200);
+  var rank = 0;
+  var total = ranking.length;
+  for (var j = 0; j < ranking.length; j++) {
+    if (ranking[j].n === n) { rank = j + 1; break; }
+  }
+
+  return {
+    ok: true,
+    game: game,
+    gameName: GAME_KEYS[game],
+    n: n,
+    score: score,
+    best: best,
+    rank: rank,
+    total: total
+  };
+}
+
+/** GET gameRank — 게임별 TOP N 또는 전체 */
+function listGameRank_(game, limit) {
+  ensureGameSheet_();
+  limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
+  var sh = sheet("게임점수");
+  var last = sh.getLastRow();
+  var bestMap = {}; // key: n -> {n, score, t}
+
+  if (last >= 2) {
+    var vals = sh.getRange(2, 1, last - 1, 5).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      var t = vals[i][0];
+      var n = String(vals[i][1] || "").trim();
+      var g = String(vals[i][2] || "").trim().toLowerCase();
+      var best = Number(vals[i][4]) || Number(vals[i][3]) || 0;
+      if (!n || g !== game) continue;
+      if (!bestMap[n] || best > bestMap[n].score) {
+        var ts = "";
+        try {
+          if (t instanceof Date) {
+            ts = Utilities.formatDate(t, "Asia/Seoul", "MM-dd HH:mm");
+          } else {
+            ts = String(t).slice(0, 16);
+          }
+        } catch (e) { ts = ""; }
+        bestMap[n] = { n: n, score: best, t: ts };
+      }
+    }
+  }
+
+  var arr = [];
+  for (var k in bestMap) arr.push(bestMap[k]);
+  arr.sort(function (a, b) {
+    if (b.score !== a.score) return b.score - a.score;
+    return String(a.n).localeCompare(String(b.n), "ko");
+  });
+  return arr.slice(0, limit);
+}
+
+function gameRankPayload_(game, limit) {
+  limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
+  game = String(game || "").trim().toLowerCase();
+
+  // 특정 게임
+  if (game && GAME_KEYS[game]) {
+    var rank = listGameRank_(game, limit);
+    // total participants (not limited)
+    var all = listGameRank_(game, 500);
+    return {
+      ok: true,
+      game: game,
+      gameName: GAME_KEYS[game],
+      rank: rank,
+      total: all.length
+    };
+  }
+
+  // 전체 4게임
+  var games = {};
+  var keys = Object.keys(GAME_KEYS);
+  for (var i = 0; i < keys.length; i++) {
+    var gk = keys[i];
+    var r = listGameRank_(gk, limit);
+    var all2 = listGameRank_(gk, 500);
+    games[gk] = {
+      name: GAME_KEYS[gk],
+      rank: r,
+      total: all2.length
+    };
+  }
+  return { ok: true, games: games, limit: limit };
+}
+
+
+// ══════════════════════════════════════
+//  HTTP — doGet / doPost
+// ══════════════════════════════════════
+
+function doGet(e) {
+  e = e || {};
+  var p = e.parameter || {};
+  var action = String(p.action || "");
+
+  try {
+    if (action === "rooms") {
+      return json({ ok: true, rooms: listRooms_() });
+    }
+
+    if (action === "roomCount") {
+      var room = String(p.room || "").trim();
+      if (!room) return json({ error: "room 필요" });
+      var found = findRoomRow_(room);
+      if (!found) return json({ error: "없음", room: room });
+      return json({
+        room: found.room,
+        count: found.count,
+        updated: found.updated,
+        note: found.note || ""
+      });
+    }
+
+    if (action === "todayRecruit") {
+      return json(getTodayRecruit_(p.date));
+    }
+
+    if (action === "posts") {
+      return json({ ok: true, posts: listPosts_() });
+    }
+
+    if (action === "rumors") {
+      return json({ ok: true, rumors: listRumors_() });
+    }
+
+    if (action === "weekly") {
+      return json(getLatestWeekly_());
+    }
+
+    if (action === "gameRank") {
+      return json(gameRankPayload_(p.game, p.limit));
+    }
+
+    if (action === "health" || action === "" || action === "ping") {
+      return json(healthPayload_());
+    }
+
+    return json({
+      ok: true,
+      msg: "세종탁구방 API v" + API_VERSION,
+      hint: "action 지정 필요",
+      actions: healthPayload_().actions
+    });
+  } catch (err) {
+    return json({ error: String(err.message || err) });
+  }
+}
+
+function doPost(e) {
+  e = e || {};
+  var raw = "";
+  try {
+    raw = (e.postData && e.postData.contents) ? e.postData.contents : "";
+  } catch (err1) {
+    raw = "";
+  }
+
+  var data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch (err2) {
+    data = (e.parameter) ? e.parameter : {};
+  }
+
+  var action = String(data.action || "");
+
+  try {
+    if (action === "updateRoom") {
+      var r = upsertRoom_(data.room, data.count, data.note);
+      return json({
+        ok: true,
+        room: r.room,
+        count: r.count,
+        updated: r.updated,
+        note: r.note,
+        created: r.created
+      });
+    }
+
+    if (action === "todayRecruit") {
+      return json(upsertTodayRecruit_(data));
+    }
+
+    if (action === "chat") {
+      appendChat_(data.room || data.r, data.n, data.m);
+      return json({ ok: true });
+    }
+
+    if (action === "join") {
+      appendJoin_(data);
+      return json({ ok: true });
+    }
+
+    if (action === "post") {
+      appendPost_(data.id, data.n, data.m);
+      return json({ ok: true });
+    }
+
+    if (action === "comment") {
+      appendComment_(data.pid, data.n, data.m);
+      return json({ ok: true });
+    }
+
+    if (action === "rumor") {
+      appendRumor_(data.n, data.m);
+      return json({ ok: true });
+    }
+
+    if (action === "gameScore") {
+      return json(saveGameScore_(data.n, data.game, data.score));
+    }
+
+    return json({ ok: false, error: "unknown action: " + action });
+  } catch (err) {
+    return json({ ok: false, error: String(err.message || err) });
+  }
+}
+
+function healthPayload_() {
+  var roomCount = 0;
+  try {
+    roomCount = listRooms_().length;
+  } catch (e) {}
+  return {
+    ok: true,
+    msg: "세종탁구방 API v" + API_VERSION,
+    version: API_VERSION,
+    rooms: roomCount,
+    actions: [
+      "health",
+      "rooms",
+      "roomCount",
+      "updateRoom",
+      "todayRecruit",
+      "posts",
+      "rumors",
+      "weekly",
+      "chat",
+      "join",
+      "gameScore",
+      "gameRank",
+      "post",
+      "comment",
+      "rumor"
+    ]
+  };
+}
+
+// ══════════════════════════════════════
+//  쓰기 — 라운지 / 로그 / 소문
+// ══════════════════════════════════════
+
+var BAD_WORDS = [
+  "시발", "씨발", "씨빨", "시빨", "씨바", "씨팔", "ㅅㅂ", "ㅆㅂ",
+  "새끼", "새꺄", "병신", "ㅂㅅ", "지랄", "ㅈㄹ", "좆", "존나", "존내", "ㅈㄴ",
+  "꺼져", "닥쳐", "미친놈", "미친년", "fuck", "shit", "bitch"
+];
+
+function hasBadWord_(t) {
+  t = String(t || "").toLowerCase();
+  for (var i = 0; i < BAD_WORDS.length; i++) {
+    if (t.indexOf(BAD_WORDS[i]) >= 0) return true;
+  }
+  return false;
+}
+
+function appendChat_(room, nick, msg) {
+  room = String(room || "").trim();
+  nick = String(nick || "").trim();
+  msg = String(msg || "").trim().slice(0, 500);
+  if (!msg) return;
+  if (hasBadWord_(msg)) return;
+  sheet("대화로그").appendRow([new Date(), room, nick, msg]);
+}
+
+function appendJoin_(data) {
+  var n = String(data.n || data.닉네임 || "").trim();
+  if (!n) return;
+  sheet("가입자").appendRow([
+    new Date(),
+    n,
+    String(data.c || data.운동경력 || ""),
+    String(data.b || data.부수 || ""),
+    String(data.goal || data.목표 || "")
+  ]);
+}
+
+function appendPost_(id, nick, msg) {
+  id = String(id || ("p" + Date.now()));
+  nick = String(nick || "익명").trim();
+  msg = String(msg || "").trim().slice(0, 2000);
+  if (!msg || hasBadWord_(msg)) return;
+  sheet("게시글").appendRow([new Date(), id, nick, msg]);
+}
+
+function appendComment_(pid, nick, msg) {
+  pid = String(pid || "").trim();
+  nick = String(nick || "익명").trim();
+  msg = String(msg || "").trim().slice(0, 1000);
+  if (!pid || !msg || hasBadWord_(msg)) return;
+  sheet("댓글").appendRow([new Date(), pid, nick, msg]);
+}
+
+function appendRumor_(nick, msg) {
+  nick = String(nick || "익명").trim();
+  msg = String(msg || "").trim().slice(0, 500);
+  if (!msg || hasBadWord_(msg)) return;
+  // 상태: 대기 → 시트에서 "승인"으로 바꾸면 공개
+  sheet("소문").appendRow([new Date(), nick, msg, "대기"]);
+}
+
+// ══════════════════════════════════════
+//  읽기 — 게시글 / 소문 / 주간
+// ══════════════════════════════════════
+
+function listPosts_() {
+  var sh = sheet("게시글");
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+
+  var posts = sh.getRange(2, 1, last, 4).getValues();
+  var csh = sheet("댓글");
+  var clast = csh.getLastRow();
+  var comments = clast >= 2 ? csh.getRange(2, 1, clast, 4).getValues() : [];
+
+  var byId = {};
+  var out = [];
+  for (var i = posts.length - 1; i >= 0; i--) {
+    var id = String(posts[i][1] || "");
+    if (!id) continue;
+    var item = {
+      id: id,
+      t: posts[i][0] ? new Date(posts[i][0]).toISOString() : "",
+      n: String(posts[i][2] || ""),
+      m: String(posts[i][3] || ""),
+      comments: []
+    };
+    byId[id] = item;
+    out.push(item);
+    if (out.length >= 50) break;
+  }
+
+  for (var j = 0; j < comments.length; j++) {
+    var pid = String(comments[j][1] || "");
+    if (byId[pid]) {
+      byId[pid].comments.push({
+        n: String(comments[j][2] || ""),
+        m: String(comments[j][3] || "")
+      });
+    }
+  }
+  return out;
+}
+
+function listRumors_() {
+  var sh = sheet("소문");
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  var values = sh.getRange(2, 1, last, 4).getValues();
+  var out = [];
+  for (var i = values.length - 1; i >= 0; i--) {
+    var status = String(values[i][3] || "");
+    if (status !== "승인") continue;
+    out.push({
+      t: values[i][0] ? new Date(values[i][0]).toISOString() : "",
+      n: String(values[i][1] || ""),
+      m: String(values[i][2] || "")
+    });
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+
+/**
+ * 최신 주간 1건
+ * 봇(세종 신문) / 웹 공통 형식:
+ * { ok, created, data: { kw, rank, news }, kw, rank, news }
+ */
+function getLatestWeekly_() {
+  var sh = sheet("주간");
+  var last = sh.getLastRow();
+  if (last < 2) {
+    return {
+      ok: true,
+      error: "주간 데이터 없음",
+      kw: [],
+      rank: [],
+      news: null,
+      data: { kw: [], rank: [], news: null }
+    };
+  }
+
+  var row = sh.getRange(last, 1, 1, 2).getValues()[0];
+  var created = "";
+  if (row[0]) {
+    var d = new Date(row[0]);
+    created = !isNaN(d.getTime()) ? d.toISOString() : String(row[0]);
+  }
+
+  var raw = row[1];
+  var data = { kw: [], rank: [], news: null };
+  try {
+    if (typeof raw === "string") {
+      data = JSON.parse(raw || "{}");
+    } else if (raw && typeof raw === "object") {
+      data = raw;
+    }
+  } catch (err) {
+    data = { kw: [], rank: [], news: null, raw: String(raw).slice(0, 200) };
+  }
+
+  return {
+    ok: true,
+    created: created,
+    data: data,
+    kw: data.kw || [],
+    rank: data.rank || [],
+    news: data.news || null
+  };
+}
+
+// ══════════════════════════════════════
+//  주간 분석 (선택 — GEMINI_API_KEY)
+// ══════════════════════════════════════
+
+function weeklyDigest() {
+  var sh = sheet("대화로그");
+  var last = sh.getLastRow();
+  if (last < 2) {
+    Logger.log("대화로그 없음");
+    return;
+  }
+
+  var start = Math.max(2, last - 400);
+  var values = sh.getRange(start, 1, last, 4).getValues();
+  var lines = [];
+  var rankMap = {};
+  for (var i = 0; i < values.length; i++) {
+    var nick = String(values[i][2] || "").trim();
+    var msg = String(values[i][3] || "").trim();
+    if (!msg) continue;
+    if (nick) rankMap[nick] = (rankMap[nick] || 0) + 1;
+    lines.push((nick || "?") + ": " + msg.slice(0, 120));
+  }
+
+  var rank = Object.keys(rankMap).map(function (n) {
+    return { n: mask_(n), c: rankMap[n] };
+  });
+  rank.sort(function (a, b) { return b.c - a.c; });
+  rank = rank.slice(0, 15);
+
+  var kw = ["즐탁", "벙개", "복컴", "드라이브", "조탁"];
+  var news = {
+    title: "세종탁구방 주간 소식",
+    lines: [
+      "최근 대화 " + lines.length + "건을 모았습니다.",
+      "코트에서 안전하게, 즐탁하세요."
+    ]
+  };
+
+  try {
+    var sample = lines.slice(-80).join("\n");
+    var prompt =
+      "세종 탁구 동호회 카톡 대화를 분석해 JSON만 답해.\n" +
+      '형식: {"kw":["키워드5개"],"news":{"title":"제목","lines":["문장","문장","문장"]}}\n' +
+      "대화:\n" + sample;
+    var ai = callGemini_(prompt);
+    if (ai.kw && ai.kw.length) kw = ai.kw.slice(0, 8);
+    if (ai.news) news = ai.news;
+  } catch (err) {
+    Logger.log("Gemini 생략: " + err);
+  }
+
+  sheet("주간").appendRow([
+    new Date(),
+    JSON.stringify({ kw: kw, rank: rank, news: news })
+  ]);
+  Logger.log("주간 분석 완료 kw=" + kw.join(","));
+}
+
+function mask_(n) {
+  n = String(n).trim();
+  if (n.length <= 1) return n + "＊";
+  return n.charAt(0) + "＊＊";
+}
+
+function callGemini_(prompt) {
+  var key = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
+  if (!key) throw new Error("GEMINI_API_KEY 없음");
+  var res = UrlFetchApp.fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + key,
+    {
+      method: "post",
+      contentType: "application/json",
+      muteHttpExceptions: true,
+      payload: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.4 }
+      })
+    }
+  );
+  var body = JSON.parse(res.getContentText());
+  if (!body.candidates || !body.candidates.length) {
+    throw new Error("Gemini 응답 없음: " + res.getContentText().slice(0, 200));
+  }
+  return JSON.parse(body.candidates[0].content.parts[0].text);
+}
+
+function createWeeklyTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "weeklyDigest") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  ScriptApp.newTrigger("weeklyDigest")
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(6)
+    .create();
+  Logger.log("매주 월요일 06시 weeklyDigest 예약 완료");
+}
+
+/**
+ * 수동 테스트용 — 방인원 샘플이 없으면 시드
+ */
+function seedRoomsIfEmpty() {
+  ensureRoomSheet_();
+  if (listRooms_().length > 0) {
+    Logger.log("이미 방인원 있음: " + listRooms_().length);
+    return;
+  }
+  var seed = [
+    ["종촌동", 26],
+    ["고운동", 30],
+    ["새롬동", 30],
+    ["도담동", 30],
+    ["집현동", 20],
+    ["소담동", 30],
+    ["나성동", 20]
+  ];
+  for (var i = 0; i < seed.length; i++) {
+    upsertRoom_(seed[i][0], seed[i][1], "seed");
+  }
+  Logger.log("시드 완료");
+}
+
+/**
+ * 수동 테스트 — 오늘모집 샘플 1건
+ */
+function seedTodayRecruitSample() {
+  var r = upsertTodayRecruit_({
+    date: todayKeyKst_(),
+    place: "새롬복컴",
+    time: "19시",
+    host: "세종이",
+    members: ["세종이", "음악시간미술시간"],
+    note: "seed"
+  });
+  Logger.log(JSON.stringify(r));
+}

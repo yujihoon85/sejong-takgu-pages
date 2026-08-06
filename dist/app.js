@@ -1089,11 +1089,12 @@
     var overlay = $("courtEnter");
     var btn = $("btnEnterCourt");
     var skip = $("btnSkipEnter");
+    var canvas = $("ceCanvas");
     if (!overlay) return;
 
     var greets = [
       { t: "안녕하세요!", s: "오늘도 즐탁 한 판 하실래요?" },
-      { t: "어서 오세요!", s: "코트에 오신 걸 환영합니다" },
+      { t: "어서 오세요!", s: "3D 코트에 오신 걸 환영합니다" },
       { t: "반갑습니다!", s: "세종 탁구 이웃들이 기다리고 있어요" },
       { t: "하이, 탁구인!", s: "라켓 챙기셨나요? 한 세트 가시죠" },
       { t: "좋은 하루예요!", s: "조탁·벙개·랠리, 오늘도 즐탁!" }
@@ -1105,8 +1106,6 @@
     var g = greets[Math.floor(Math.random() * greets.length)];
     var title = $("ceGreetTitle");
     var sub = $("ceGreetSub");
-    if (title) title.innerHTML = esc(g.t).replace(/!/, "!").replace(/(안녕하세요|어서 오세요|반갑습니다|하이, 탁구인|좋은 하루예요|좋은 아침이에요|수고 많으셨어요)/, "<em>$1</em>");
-    // simpler: wrap whole short greet
     if (title) {
       var raw = g.t;
       var em = raw.replace(/!$/, "");
@@ -1115,12 +1114,34 @@
     if (sub) sub.textContent = g.s;
 
     var seen = false;
-    try { seen = sessionStorage.getItem("pp_court_enter_v2") === "1"; } catch (e) {}
+    try { seen = false; sessionStorage.removeItem("pp_court_enter_v3"); } catch (e) {}
+
+    var enter3d = null;
+    function start3d() {
+      if (!canvas || !window.SejongEnter3D || !window.THREE) {
+        overlay.classList.add("fallback-on");
+        var fb = $("ceFallback");
+        if (fb) fb.hidden = false;
+        return;
+      }
+      try {
+        enter3d = window.SejongEnter3D.init(canvas, {});
+        if (!enter3d) {
+          overlay.classList.add("fallback-on");
+          var fb2 = $("ceFallback");
+          if (fb2) fb2.hidden = false;
+        }
+      } catch (err) {
+        console.warn("enter3d fail", err);
+        overlay.classList.add("fallback-on");
+      }
+    }
 
     function dismiss() {
       if (!overlay || overlay.classList.contains("hide")) return;
       overlay.classList.add("hide");
-      try { sessionStorage.setItem("pp_court_enter_v2", "1"); } catch (e2) {}
+      try { sessionStorage.setItem("pp_court_enter_v3", "1"); } catch (e2) {}
+      try { if (window.SejongEnter3D) window.SejongEnter3D.dispose(); } catch (e3) {}
       setTimeout(function () {
         if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
       }, 700);
@@ -1132,24 +1153,23 @@
       return;
     }
 
+    // boot 3D after layout
+    setTimeout(start3d, 40);
+
     if (btn) btn.addEventListener("click", dismiss);
     if (skip) skip.addEventListener("click", dismiss);
-    overlay.addEventListener("click", function (e) {
-      if (e.target === overlay || e.target.classList.contains("ce-spot")) dismiss();
-    });
     document.addEventListener("keydown", function onKey(e) {
       if (e.key === "Escape" || e.key === "Enter") {
         dismiss();
         document.removeEventListener("keydown", onKey);
       }
     });
-    // 랠리 감상 후 살짝 강조 (자동 입장은 하지 않음 — 인사 버튼 유도)
     setTimeout(function () {
       if (btn && !overlay.classList.contains("hide")) {
         btn.style.transform = "scale(1.04)";
         setTimeout(function () { if (btn) btn.style.transform = ""; }, 400);
       }
-    }, 2200);
+    }, 2400);
   }
 
 
