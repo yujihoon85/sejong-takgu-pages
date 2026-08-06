@@ -1099,6 +1099,88 @@ table{display:block;max-width:100%;overflow-x:auto}
 .view[data-view="home"]{padding-bottom:8px}
 #homeLegacy{display:none!important}
 
+
+/* ── Room count editor ── */
+.rooms-admin{
+  margin:12px 12px 24px;
+  max-width:960px;margin-left:auto;margin-right:auto;
+  padding:16px;
+  border-radius:18px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+}
+.rooms-admin .ra-hd{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  margin-bottom:12px;flex-wrap:wrap;
+}
+.rooms-admin h3{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.rooms-admin .ra-sub{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+.rooms-admin .ra-total{
+  font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--blue-deep);
+  white-space:nowrap;
+}
+.rooms-admin .ra-total small{display:block;font-size:11px;font-weight:700;color:var(--muted);font-family:var(--sans)}
+.ra-lock{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  padding:12px;border-radius:14px;background:var(--bg);border:1px solid var(--line);
+  margin-bottom:12px;
+}
+.ra-lock input{
+  flex:1;min-width:120px;min-height:44px;padding:0 12px;border-radius:12px;
+  border:1px solid var(--line);font-size:16px;background:#fff;
+}
+.ra-list{display:flex;flex-direction:column;gap:8px}
+.ra-row{
+  display:grid;
+  grid-template-columns:1fr 88px 72px;
+  gap:8px;align-items:center;
+  padding:10px 12px;border-radius:14px;
+  background:var(--bg);border:1px solid var(--line);
+}
+.ra-row .ra-name{font-weight:800;font-size:14px}
+.ra-row .ra-note{font-size:11px;color:var(--muted);margin-top:2px}
+.ra-row input[type="number"]{
+  width:100%;min-height:44px;padding:0 10px;border-radius:12px;
+  border:1.5px solid var(--line);font-size:16px;font-weight:700;
+  font-variant-numeric:tabular-nums;text-align:center;background:#fff;
+}
+.ra-row input[type="number"]:focus{
+  outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,101,192,.15);
+}
+.ra-row .ra-save{
+  min-height:44px;border-radius:12px;font-weight:800;font-size:13px;
+  background:var(--blue);color:#fff;border:0;
+  transition:transform .15s, opacity .2s;
+}
+.ra-row .ra-save:active{transform:scale(.97)}
+.ra-row .ra-save:disabled{opacity:.5}
+.ra-add{
+  display:grid;grid-template-columns:1fr 88px 72px;gap:8px;margin-top:10px;
+}
+.ra-add input[type="text"],.ra-add input[type="number"]{
+  min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);
+  font-size:15px;background:#fff;
+}
+.ra-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ra-actions .btn{min-height:44px}
+.rooms-admin.is-locked .ra-edit-only{display:none}
+.rooms-admin.is-locked .ra-row .ra-save{display:none}
+.rooms-admin.is-locked .ra-row input{pointer-events:none;opacity:.85;background:#f1f5f9}
+.rooms-admin:not(.is-locked) .ra-lock-form{display:none}
+.rooms-admin.is-locked .ra-add{display:none}
+.rooms-admin.is-locked .ra-actions{display:none}
+.rooms-admin .ra-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;
+  background:var(--blue-soft);color:var(--blue-deep);
+}
+@media(max-width:480px){
+  .rooms-admin{margin:10px 8px 20px;padding:14px;border-radius:14px}
+  .ra-row,.ra-add{grid-template-columns:1fr 76px 64px;gap:6px;padding:8px 10px}
+  .ra-row .ra-save{font-size:12px}
+}
+
 </style>
 </head>
 <body>
@@ -1147,7 +1229,7 @@ table{display:block;max-width:100%;overflow-x:auto}
               <rect class="zone" data-go="map" data-tag="tag-city" x="68" y="24" width="30" height="32" rx="2" tabindex="0" role="button" aria-label="지도 코트"></rect>
               <rect class="zone" data-go="guide" data-tag="tag-park" x="4" y="28" width="32" height="28" rx="2" tabindex="0" role="button" aria-label="코트 가이드"></rect>
               <rect class="zone" data-go="lounge" data-tag="tag-lounge" x="34" y="46" width="32" height="16" rx="2" tabindex="0" role="button" aria-label="라운지"></rect>
-              <rect class="zone" data-go="map" data-tag="tag-people" x="8" y="62" width="36" height="28" rx="2" tabindex="0" role="button" aria-label="동별 인원"></rect>
+              <rect class="zone" data-scroll="roomsAdmin" data-tag="tag-people" x="8" y="62" width="36" height="28" rx="2" tabindex="0" role="button" aria-label="동별 인원"></rect>
               <rect class="zone" data-go="play" data-tag="tag-play" x="46" y="62" width="28" height="28" rx="2" tabindex="0" role="button" aria-label="게임"></rect>
               <rect class="zone" data-href="/game/" data-tag="tag-gamec" x="74" y="62" width="22" height="28" rx="2" tabindex="0" role="button" aria-label="게임센터"></rect>
               <rect class="zone" data-href="https://open.kakao.com/o/g51E976e" data-ext="1" data-tag="tag-kakao" x="2" y="68" width="14" height="20" rx="2" tabindex="0" role="button" aria-label="카톡방"></rect>
@@ -1177,7 +1259,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 
         <div class="poster-quick" aria-label="빠른 메뉴">
           <button type="button" class="pq" data-go="map">지도</button>
-          <button type="button" class="pq" data-go="map">인원</button>
+          <button type="button" class="pq" data-scroll="roomsAdmin">인원</button>
           <button type="button" class="pq" data-go="play">게임</button>
           <button type="button" class="pq" data-go="lounge">라운지</button>
           <button type="button" class="pq" data-go="pulse">소식</button>
@@ -1200,6 +1282,44 @@ table{display:block;max-width:100%;overflow-x:auto}
       </div>
 
       <!-- app.js 데이터 훅 (화면에는 안 보임) -->
+
+      <!-- 동별 인원 직접 수정 -->
+      <div class="rooms-admin is-locked" id="roomsAdmin">
+        <div class="ra-hd">
+          <div>
+            <h3>동별 인원 수정</h3>
+            <p class="ra-sub">카톡 봇·시트와 같은 저장소입니다. 여기서 고치면 바로 반영됩니다.</p>
+          </div>
+          <div class="ra-total"><span id="raTotal">—</span><small>합계 인원</small></div>
+        </div>
+
+        <div class="ra-lock ra-lock-form">
+          <span class="ra-badge">관리자</span>
+          <input type="password" id="raPin" placeholder="관리 비밀번호" autocomplete="current-password" inputmode="numeric" />
+          <button type="button" class="btn btn-primary btn-sm" id="raUnlock">잠금 해제</button>
+        </div>
+
+        <div class="ra-edit">
+          <div class="ra-edit-only" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+            <span class="ra-badge" id="raStatus">편집 모드</span>
+            <button type="button" class="btn btn-ghost btn-sm" id="raLock">잠금</button>
+          </div>
+          <div class="ra-list" id="raList">
+            <div class="empty" style="padding:16px;text-align:center;color:var(--muted)">불러오는 중…</div>
+          </div>
+          <div class="ra-add ra-edit-only">
+            <input type="text" id="raNewName" placeholder="새 동 이름 (예: 반곡동)" maxlength="20" />
+            <input type="number" id="raNewCount" placeholder="인원" min="0" max="999" inputmode="numeric" />
+            <button type="button" class="ra-save" id="raAdd">추가</button>
+          </div>
+          <div class="ra-actions ra-edit-only">
+            <button type="button" class="btn btn-ghost" id="raRefresh">새로고침</button>
+            <button type="button" class="btn btn-primary" id="raSaveAll">변경분 전부 저장</button>
+          </div>
+          <p class="ra-sub ra-edit-only" style="margin-top:10px">비밀번호 기본값: <b>1234</b> · app.js 의 ADMIN_PIN 에서 변경</p>
+        </div>
+      </div>
+
       <div id="homeLegacy" hidden aria-hidden="true">
         <div id="roomGrid"></div>
         <span id="liveMeta"></span>
@@ -1550,7 +1670,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./games.js?v=6"></script>
-<script src="./app.js?v=11"></script>
+<script src="./app.js?v=14"></script>
 
 <a href="/game/" class="fab-game" style="position:fixed;right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:40;background:#1565c0;color:#fff;font-weight:800;font-size:13px;padding:12px 16px;border-radius:999px;text-decoration:none;box-shadow:0 10px 28px rgba(21,101,192,.35);font-family:inherit">게임센터</a>
 

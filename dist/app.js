@@ -492,9 +492,11 @@
     if (!rooms.length) {
       if (grid) grid.innerHTML = "<div class='empty'>등록된 동이 없습니다</div>";
       if (meta) meta.textContent = "0개 동";
+      try { renderRoomsAdmin([]); } catch (e0) {}
       return;
     }
     if (meta) meta.textContent = rooms.length + "개 동 · " + (latest ? String(latest).slice(0, 16) : "최근");
+    try { renderRoomsAdmin(rooms); } catch (eRa) {}
     if (grid) {
       grid.innerHTML = rooms.map(function (r) {
         return (
@@ -1055,7 +1057,9 @@
         if (target) {
           var homeBtn = document.querySelector('.dock button[data-go="home"]');
           function go() {
-            openAccordion(target);
+            if (target.classList && (target.classList.contains("acc") || target.classList.contains("panel"))) {
+              try { openAccordion(target); } catch (e) {}
+            }
             setTimeout(function () {
               target.scrollIntoView({ behavior: "smooth", block: "start" });
             }, 40);
@@ -1117,6 +1121,243 @@
     });
   }
 
+
+
+
+  // ── 동별 인원 플랫폼 수정 ──
+  var ADMIN_PIN = "1234"; // 여기서 비밀번호 변경
+  var _roomsCache = [];
+  var _roomsDirty = {};
+
+  function isAdmin() {
+    try {
+      return localStorage.getItem("pp_admin") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+  function setAdmin(on) {
+    try {
+      if (on) localStorage.setItem("pp_admin", "1");
+      else localStorage.removeItem("pp_admin");
+    } catch (e) {}
+    var box = $("roomsAdmin");
+    if (!box) return;
+    box.classList.toggle("is-locked", !on);
+  }
+
+  function updateRoomOnServer(room, count, note) {
+    if (!BOARD_URL) return Promise.reject(new Error("no url"));
+    var payload = JSON.stringify({
+      action: "updateRoom",
+      room: room,
+      count: Number(count),
+      note: note || "플랫폼에서 수정"
+    });
+    // Apps Script: POST 후 302 follow 하면 405 남 → redirect 따라가지 않음
+    // (첫 요청에서 doPost 는 이미 실행됨)
+    return fetch(BOARD_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: payload,
+      redirect: "manual"
+    }).then(function (r) {
+      if (r.type === "opaqueredirect" || r.status === 0 || r.status === 302 || r.status === 200 || r.ok) {
+        return { ok: true };
+      }
+      // fallback no-cors (opaque, but doPost usually still runs)
+      return fetch(BOARD_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: payload
+      }).then(function () { return { ok: true, opaque: true }; });
+    }).catch(function () {
+      return fetch(BOARD_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: payload
+      }).then(function () { return { ok: true, opaque: true }; });
+    });
+  }
+
+  function renderRoomsAdmin(rooms) {
+    _roomsCache = (rooms || []).slice().sort(function (a, b) {
+      return String(a.room).localeCompare(String(b.room), "ko");
+    });
+    var list = $("raList");
+    var totalEl = $("raTotal");
+    if (!list) return;
+    var total = 0;
+    _roomsCache.forEach(function (r) {
+      total += Number(r.count) || 0;
+    });
+    if (totalEl) totalEl.textContent = String(total);
+    if ($("stTotal")) $("stTotal").textContent = String(total);
+    if ($("stDongs")) $("stDongs").textContent = String(_roomsCache.length);
+
+    if (!_roomsCache.length) {
+      list.innerHTML = "<div class='empty' style='padding:16px;text-align:center;color:var(--muted)'>등록된 동이 없습니다. 아래에서 추가하세요.</div>";
+      return;
+    }
+    list.innerHTML = _roomsCache.map(function (r, idx) {
+      var c = _roomsDirty[r.room] != null ? _roomsDirty[r.room] : (Number(r.count) || 0);
+      return (
+        '<div class="ra-row" data-room="' + esc(r.room) + '">' +
+          '<div><div class="ra-name">' + esc(r.room) + '</div>' +
+          '<div class="ra-note">' + esc((r.note || r.updated || "").toString().slice(0, 40)) + '</div></div>' +
+          '<input type="number" min="0" max="999" inputmode="numeric" value="' + c + '" data-ra-input="' + esc(r.room) + '" />' +
+          '<button type="button" class="ra-save" data-ra-save="' + esc(r.room) + '">저장</button>' +
+        "</div>"
+      );
+    }).join("");
+
+    list.querySelectorAll("[data-ra-input]").forEach(function (inp) {
+      inp.addEventListener("input", function () {
+        var room = inp.getAttribute("data-ra-input");
+        _roomsDirty[room] = Number(inp.value) || 0;
+        var sum = 0;
+        list.querySelectorAll("[data-ra-input]").forEach(function (x) {
+          sum += Number(x.value) || 0;
+        });
+        if (totalEl) totalEl.textContent = String(sum);
+      });
+    });
+    list.querySelectorAll("[data-ra-save]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var room = btn.getAttribute("data-ra-save");
+        var row = list.querySelector('.ra-row[data-room="' + room + '"]');
+        var inp = row ? row.querySelector("input") : null;
+        if (!inp) return;
+        saveOneRoom(room, Number(inp.value) || 0, btn);
+      });
+    });
+  }
+
+  function saveOneRoom(room, count, btn) {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "…";
+    }
+    var who = "플랫폼";
+    try {
+      var u = me();
+      if (u && u.n) who = u.n + " (플랫폼)";
+    } catch (e) {}
+    return updateRoomOnServer(room, count, who + "님이 업데이트")
+      .then(function () {
+        delete _roomsDirty[room];
+        toast(room + " → " + count + "명 저장");
+        // patch cache
+        var found = false;
+        _roomsCache.forEach(function (r) {
+          if (r.room === room) {
+            r.count = count;
+            r.updated = new Date().toISOString();
+            r.note = who + "님이 업데이트";
+            found = true;
+          }
+        });
+        if (!found) {
+          _roomsCache.push({ room: room, count: count, updated: new Date().toISOString(), note: who });
+        }
+        renderRooms(_roomsCache);
+        renderRoomsAdmin(_roomsCache);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "저장";
+        }
+      })
+      .catch(function () {
+        toast("저장 실패 · 네트워크/GAS 확인");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "저장";
+        }
+      });
+  }
+
+  function saveAllDirty() {
+    var list = $("raList");
+    if (!list) return;
+    var jobs = [];
+    list.querySelectorAll("[data-ra-input]").forEach(function (inp) {
+      var room = inp.getAttribute("data-ra-input");
+      var count = Number(inp.value) || 0;
+      var orig = null;
+      _roomsCache.forEach(function (r) {
+        if (r.room === room) orig = Number(r.count) || 0;
+      });
+      if (orig === null || orig !== count) {
+        jobs.push({ room: room, count: count });
+      }
+    });
+    if (!jobs.length) {
+      toast("변경된 인원이 없습니다");
+      return;
+    }
+    var i = 0;
+    function next() {
+      if (i >= jobs.length) {
+        toast(jobs.length + "개 동 저장 완료");
+        loadRooms();
+        return;
+      }
+      var j = jobs[i++];
+      updateRoomOnServer(j.room, j.count, "플랫폼 일괄 저장")
+        .then(function () { next(); })
+        .catch(function () {
+          toast(j.room + " 저장 실패");
+          next();
+        });
+    }
+    toast(jobs.length + "개 저장 중…");
+    next();
+  }
+
+  function initRoomsAdmin() {
+    var box = $("roomsAdmin");
+    if (!box || box._bound) return;
+    box._bound = true;
+    setAdmin(isAdmin());
+
+    $("raUnlock") && $("raUnlock").addEventListener("click", function () {
+      var pin = ($("raPin") && $("raPin").value) || "";
+      if (pin === ADMIN_PIN) {
+        setAdmin(true);
+        if ($("raPin")) $("raPin").value = "";
+        toast("관리 모드 열림");
+        loadRooms();
+      } else {
+        toast("비밀번호가 달라요");
+      }
+    });
+    $("raPin") && $("raPin").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") $("raUnlock") && $("raUnlock").click();
+    });
+    $("raLock") && $("raLock").addEventListener("click", function () {
+      setAdmin(false);
+      toast("잠금됨");
+    });
+    $("raRefresh") && $("raRefresh").addEventListener("click", function () {
+      loadRooms();
+      toast("인원 새로고침");
+    });
+    $("raSaveAll") && $("raSaveAll").addEventListener("click", saveAllDirty);
+    $("raAdd") && $("raAdd").addEventListener("click", function () {
+      var name = (($("raNewName") && $("raNewName").value) || "").trim();
+      var count = Number(($("raNewCount") && $("raNewCount").value) || 0);
+      if (!name) {
+        toast("동 이름을 입력하세요");
+        return;
+      }
+      saveOneRoom(name, count, $("raAdd")).then(function () {
+        if ($("raNewName")) $("raNewName").value = "";
+        if ($("raNewCount")) $("raNewCount").value = "";
+      });
+    });
+  }
 
 
   function initPosterMap() {
@@ -1227,7 +1468,7 @@
     wireSisterLinks();
     wireYouTubePractice();
     renderGuide();
-    try { renderGear("all"); wireGearTabs(); renderBooks(); initAccordions(); wireArenaScroll(); initPosterMap(); initCourtEnter(); } catch (eArena) {}
+    try { renderGear("all"); wireGearTabs(); renderBooks(); initAccordions(); wireArenaScroll(); initPosterMap(); initRoomsAdmin(); initCourtEnter(); } catch (eArena) {}
     if (me()) afterJoin();
     else $("btnProfile").textContent = "입장";
     loadRooms();
