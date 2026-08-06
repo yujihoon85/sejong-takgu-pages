@@ -1072,14 +1072,65 @@
         var id = el.getAttribute("data-scroll");
         var target = document.getElementById(id);
         if (target) {
-          // home view first
           var homeBtn = document.querySelector('.dock button[data-go="home"]');
+          function go() {
+            openAccordion(target);
+            setTimeout(function () {
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 40);
+          }
           if (homeBtn && !document.querySelector('.view[data-view="home"].on')) {
             homeBtn.click();
-            setTimeout(function () { target.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80);
+            setTimeout(go, 80);
           } else {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
+            go();
           }
+        }
+      });
+    });
+  }
+
+
+  function openAccordion(panel) {
+    if (!panel) return;
+    panel.classList.add("open");
+    var tg = panel.querySelector(".acc-toggle");
+    if (tg) tg.setAttribute("aria-expanded", "true");
+  }
+  function closeAccordion(panel) {
+    if (!panel) return;
+    panel.classList.remove("open");
+    var tg = panel.querySelector(".acc-toggle");
+    if (tg) tg.setAttribute("aria-expanded", "false");
+  }
+  function toggleAccordion(panel) {
+    if (!panel) return;
+    if (panel.classList.contains("open")) closeAccordion(panel);
+    else openAccordion(panel);
+  }
+  function initAccordions() {
+    document.querySelectorAll(".panel.acc, .acc.panel").forEach(function (panel) {
+      var tg = panel.querySelector(":scope > .acc-toggle");
+      if (!tg || tg._accBound) return;
+      tg._accBound = true;
+      function onToggle(e) {
+        // allow nested buttons/links to work without toggling
+        var t = e.target;
+        if (t && t.closest && (t.closest("a") || (t.closest("button") && !t.closest(".acc-toggle")))) {
+          return;
+        }
+        if (t && t.closest && t.closest(".btn") && t.closest(".panel-hd")) {
+          // side action buttons inside header
+          return;
+        }
+        e.preventDefault();
+        toggleAccordion(panel);
+      }
+      tg.addEventListener("click", onToggle);
+      tg.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleAccordion(panel);
         }
       });
     });
@@ -1102,7 +1153,7 @@
     wireSisterLinks();
     wireYouTubePractice();
     renderGuide();
-    try { renderGear("all"); wireGearTabs(); renderBooks(); wireArenaScroll(); initCourtEnter(); } catch (eArena) {}
+    try { renderGear("all"); wireGearTabs(); renderBooks(); initAccordions(); wireArenaScroll(); initCourtEnter(); } catch (eArena) {}
     if (me()) afterJoin();
     else $("btnProfile").textContent = "입장";
     loadRooms();

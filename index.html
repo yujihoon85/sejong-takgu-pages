@@ -702,6 +702,35 @@ input,textarea,select{font-size:16px!important}
 img,video,canvas,iframe,svg{max-width:100%}
 table{display:block;max-width:100%;overflow-x:auto}
 
+
+/* ── Accordion panels (less scroll) ── */
+.panel.acc{padding:0;overflow:hidden}
+.panel.acc > .acc-toggle{
+  width:100%;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:16px 18px;text-align:left;background:transparent;border:0;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.panel.acc > .acc-toggle .acc-titles{min-width:0;flex:1}
+.panel.acc > .acc-toggle .acc-chev{
+  flex-shrink:0;width:28px;height:28px;border-radius:999px;
+  display:grid;place-items:center;margin-top:2px;
+  background:var(--blue-soft);color:var(--blue-deep);
+  font-size:14px;font-weight:800;transition:transform .2s var(--ease);
+}
+.panel.acc.open > .acc-toggle .acc-chev{transform:rotate(180deg)}
+.panel.acc > .acc-body{
+  display:none;padding:0 18px 16px;
+  border-top:1px solid var(--line);
+}
+.panel.acc.open > .acc-body{display:block;padding-top:14px}
+.panel.acc .panel-hd{margin-bottom:0;pointer-events:none}
+.panel.acc .acc-toggle .panel-hd{margin:0}
+.panel.acc .acc-side{pointer-events:auto;flex-shrink:0;display:flex;align-items:center;gap:8px}
+@media(max-width:480px){
+  .panel.acc > .acc-toggle{padding:14px}
+  .panel.acc.open > .acc-body{padding:12px 14px 14px}
+}
+
 </style>
 </head>
 <body>
@@ -777,15 +806,15 @@ table{display:block;max-width:100%;overflow-x:auto}
       </div>
 
       <!-- 1 용품 코너 -->
-      <div class="panel" id="zone-gear" style="margin-bottom:14px">
-        <div class="panel-hd">
+      <div class="acc panel" id="zone-gear" style="margin-bottom:14px">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
           <div>
             <div class="zone-label">ZONE · PRO SHOP</div>
             <h3>용품 코너</h3>
             <p>선수 가방 속 · 라켓·러버·공·신발 가이드</p>
           </div>
-        </div>
-        <div class="gear-tabs" id="gearTabs" role="tablist">
+        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="gear-tabs" id="gearTabs" role="tablist">
           <button type="button" class="on" data-gear="all">전체</button>
           <button type="button" data-gear="racket">라켓</button>
           <button type="button" data-gear="rubber">러버</button>
@@ -795,52 +824,33 @@ table{display:block;max-width:100%;overflow-x:auto}
         <div class="gear-grid" id="gearGrid"></div>
         <p class="blurb" style="margin:12px 0 0;color:var(--subtle);font-size:12px;line-height:1.45">
           ※ 추천은 커뮤니티 가이드용이며 특정 브랜드 광고가 아닙니다. 초보는 완성품부터, 중급부터 블레이드·러버 조합을 고민하세요.
-        </p>
-      </div>
+        </p></div>
+</div>
 
       <!-- 2 탁구 서재 미리보기 -->
-      <div class="panel" id="zone-library" style="margin-bottom:14px">
-        <div class="panel-hd">
+      <div class="acc panel" id="zone-library" style="margin-bottom:14px">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
           <div>
             <div class="zone-label">ZONE · LIBRARY</div>
             <h3>탁구 서재</h3>
             <p>코트 옆 책장 · 실전 가이드</p>
           </div>
           <button type="button" class="btn btn-ghost btn-sm" data-go="learn">서재 전체</button>
-        </div>
-        <div class="book-shelf" id="homeBookShelf"></div>
-      </div>
+        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="book-shelf" id="homeBookShelf"></div></div>
+</div>
 
-          <b>센터 코트</b>
-          <small>지도 · 클럽 · 복컴</small>
-        </button>
-        <button type="button" class="arena-zone" data-scroll="zone-bench">
-          <div class="az-ico">👕</div>
-          <b>선수 대기석</b>
-          <small>동별 인원 · 일정</small>
-        </button>
-        <button type="button" class="arena-zone" data-scroll="zone-gear">
-          <div class="az-ico">🎒</div>
-          <b>용품 코너</b>
-          <small>라켓 · 러버 · 공</small>
-        </button>
-        <button type="button" class="arena-zone" data-scroll="zone-library">
-          <div class="az-ico">📖</div>
-          <b>탁구 서재</b>
-          <small>책 · 초보 5강</small>
-        </button>
-      </div>
 
-      <div class="panel" style="margin-bottom:14px">
-        <div class="panel-hd">
+<div class="acc panel" style="margin-bottom:14px">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
           <div>
             <div class="zone-label">ZONE · CENTER COURT</div>
             <h3>동네 코트 지도</h3>
             <p>시합장 플로어맵 · 클럽 · 복컴 · 동 거점</p>
           </div>
           <button type="button" class="btn btn-accent btn-sm" data-go="map">전체 지도</button>
-        </div>
-        <div class="home-map-shell">
+        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="home-map-shell">
           <div class="map-hint">세종시 · Living Graph</div>
           <div id="homeMap" role="img" aria-label="세종 탁구 코트 미니 지도"></div>
           <div class="map-cta">
@@ -849,18 +859,18 @@ table{display:block;max-width:100%;overflow-x:auto}
         </div>
         <p class="blurb" style="margin:10px 0 0;color:var(--subtle);font-size:12.5px;line-height:1.45">
           하단 <b>지도</b> 탭 · 마커 터치 시 연결선 · 인원은 카톡 봇과 같은 시트
-        </p>
-      </div>
+        </p></div>
+</div>
 
-      <div class="panel" style="margin-bottom:14px">
-        <div class="panel-hd">
+      <div class="acc panel" style="margin-bottom:14px">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
           <div>
             <div class="zone-label">ZONE · HIGHLIGHT REEL</div>
             <h3>시합장 하이라이트</h3>
             <p>주말 벙개 · 코트 모이는 하루 — 세종의 아침</p>
           </div>
-        </div>
-        <div class="video-wrap">
+        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="video-wrap">
                     <video
             id="promoVideo"
             controls
@@ -875,17 +885,17 @@ table{display:block;max-width:100%;overflow-x:auto}
         </div>
         <p class="blurb" style="margin:10px 0 0;color:var(--subtle);font-size:12.5px;line-height:1.45">
           채팅방에 글 올리고, 라켓 챙기고, 복컴에서 인사하고, 즐탁 후 커피 한잔 — 웹 최적화 영상(약 15MB · H.264)입니다. 재생 안 되면 새로고침 해 주세요.
-        </p>
-      </div>
+        </p></div>
+</div>
 
-      <div class="panel" style="margin-bottom:14px">
-        <div class="panel-hd">
+      <div class="acc panel" style="margin-bottom:14px">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
           <div>
             <h3>바로 가기</h3>
             <p>카톡 방 · 충청이음</p>
           </div>
-        </div>
-        <div class="sister-grid">
+        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="sister-grid">
           
           <a class="sister-link" id="linkKakao" href="https://open.kakao.com/o/g51E976e" target="_blank" rel="noopener">
             <span class="ico" aria-hidden="true">
@@ -908,53 +918,53 @@ table{display:block;max-width:100%;overflow-x:auto}
             </span>
             <span class="arr">→</span>
           </a>
+</div></div>
 </div>
-      </div>
 
 
-      <div class="panel yt-panel" style="margin-bottom:14px">
-        <div class="panel-hd">
+      <div class="acc panel yt-panel" style="margin-bottom:14px">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
           <div>
             <div class="zone-label">ZONE · COACHING SCREEN</div>
             <h3>코칭 스크린 · 연습 영상</h3>
             <p>조회수 높은 레슨 · 목록에서 골라 보기</p>
           </div>
-        </div>
-        <button type="button" class="yt-toggle" id="ytToggle" aria-expanded="false">
+        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><button type="button" class="yt-toggle" id="ytToggle" aria-expanded="false">
           <span>
             <b>유튜브 영상 목록 열기</b>
             <small>포·백 드라이브 · 커트 · 초보 팁 5선</small>
           </span>
           <span class="chev" aria-hidden="true">▾</span>
         </button>
-        <div class="yt-list" id="ytList" role="list"></div>
-      </div>
+        <div class="yt-list" id="ytList" role="list"></div></div>
+</div>
 
       <div class="grid-2">
-        <div class="panel">
-          <div class="panel-hd">
+        <div class="open acc panel">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="true"><div class="acc-titles"><div class="panel-hd">
             <div>
               <div class="zone-label" id="zone-bench">ZONE · PLAYERS BENCH</div>
               <h3>선수 대기석 · 동별 인원</h3>
               <p>카톡 <span class="tabular">세종 인원</span> · 코트 인원 전광판</p>
             </div>
             <div class="chip" id="liveMeta">동기화 중</div>
-          </div>
-          <div class="room-grid" id="roomGrid">
+          </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="room-grid" id="roomGrid">
             <div class="skeleton"></div><div class="skeleton"></div>
             <div class="skeleton"></div><div class="skeleton"></div>
-          </div>
-        </div>
+          </div></div>
+</div>
 
-        <div class="panel">
-          <div class="panel-hd">
+        <div class="acc panel">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
             <div>
               <div class="zone-label">ZONE · MATCH BOARD</div>
               <h3>시합 · 벙개 보드</h3>
               <p>조탁 · 벙개 · 리그 한눈에</p>
             </div>
-          </div>
-          <div class="list">
+          </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="list">
             <div class="item">
               <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
               <div><b>주말 조탁 06:00</b><small>대평동 박범근탁구클럽 · 손씨님</small></div>
@@ -974,18 +984,18 @@ table{display:block;max-width:100%;overflow-x:auto}
           <div class="actions" style="margin-top:14px">
             <button class="btn btn-primary btn-sm" data-go="map">코트 지도 열기</button>
             <button class="btn btn-ghost btn-sm" data-go="guide">코트 가이드</button>
-          </div>
-        </div>
+          </div></div>
+</div>
       </div>
 
-      <div class="panel" style="margin-top:14px">
-        <div class="panel-hd">
+      <div class="acc panel" style="margin-top:14px">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
           <div>
             <h3>빠른 이동</h3>
             <p>자주 쓰는 기능만 모았습니다</p>
           </div>
-        </div>
-        <div class="list">
+        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="list">
           <button class="item" data-go="map" style="width:100%">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18l-6-3V5l6 3 6-3 6 3v10l-6-3-6 3z"/><path d="M9 8v10M15 5v10"/></svg></div>
             <div style="text-align:left"><b>동네 코트 지도</b><small>주변 클럽·복컴·동 연결</small></div>
@@ -1006,23 +1016,23 @@ table{display:block;max-width:100%;overflow-x:auto}
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg></div>
             <div style="text-align:left"><b>랭킹 · 아침신문</b><small id="rankHint">주간 AI 요약</small></div>
           </button>
-        </div>
-      </div>
+        </div></div>
+</div>
 
-      <div class="panel" style="margin-top:14px">
-        <div class="panel-hd">
+      <div class="acc panel" style="margin-top:14px">
+<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
           <div>
             <h3>요즘 키워드</h3>
             <p>대화 로그 주간 분석</p>
           </div>
-        </div>
-        <div class="filters" id="kwRow">
+        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
+<div class="acc-body"><div class="filters" id="kwRow">
           <span class="filter on">#새롬복컴</span>
           <span class="filter on">#벙개</span>
           <span class="filter on">#드라이브</span>
           <span class="filter on">#조탁</span>
-        </div>
-      </div>
+        </div></div>
+</div>
     </section>
 
     <!-- MAP -->
@@ -1358,7 +1368,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./games.js?v=6"></script>
-<script src="./app.js?v=5"></script>
+<script src="./app.js?v=6"></script>
 
 <a href="/game/" class="fab-game" style="position:fixed;right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:40;background:#1565c0;color:#fff;font-weight:800;font-size:13px;padding:12px 16px;border-radius:999px;text-decoration:none;box-shadow:0 10px 28px rgba(21,101,192,.35);font-family:inherit">게임센터</a>
 
