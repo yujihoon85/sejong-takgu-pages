@@ -480,22 +480,23 @@
     });
     var grid = $("roomGrid");
     var meta = $("liveMeta");
-    if (!rooms.length) {
-      grid.innerHTML =
-        "<div class='empty' style='grid-column:1/-1'>등록된 동이 없습니다. 카톡에서 세종 인원 종촌동 20</div>";
-      meta.textContent = "0개 동";
-      $("stTotal").textContent = "0";
-      $("stDongs").textContent = "0";
-      return;
-    }
     var total = 0;
     var latest = "";
     rooms.forEach(function (r) {
       total += Number(r.count) || 0;
       if (r.updated && (!latest || r.updated > latest)) latest = r.updated;
     });
-    grid.innerHTML = rooms
-      .map(function (r) {
+    if ($("stTotal")) $("stTotal").textContent = String(total);
+    if ($("stDongs")) $("stDongs").textContent = String(rooms.length);
+    if ($("stNodes")) $("stNodes").textContent = String(NODES.length);
+    if (!rooms.length) {
+      if (grid) grid.innerHTML = "<div class='empty'>등록된 동이 없습니다</div>";
+      if (meta) meta.textContent = "0개 동";
+      return;
+    }
+    if (meta) meta.textContent = rooms.length + "개 동 · " + (latest ? String(latest).slice(0, 16) : "최근");
+    if (grid) {
+      grid.innerHTML = rooms.map(function (r) {
         return (
           "<button class='room' type='button' data-dong='" +
           esc(r.room) +
@@ -506,31 +507,15 @@
           "<div class='name'>" +
           esc(r.room) +
           "</div>" +
-          "<div class='meta'>" +
-          esc(fmtTime(r.updated)) +
+          "<div class='upd'>" +
+          esc((r.updated || "").toString().slice(0, 16)) +
           "</div></button>"
         );
-      })
-      .join("");
-    grid.querySelectorAll(".room").forEach(function (el) {
-      el.addEventListener("click", function () {
-        var dong = el.getAttribute("data-dong");
-        var node = NODES.find(function (n) {
-          return n.dong === dong;
-        });
-        go("map");
-        setTimeout(function () {
-          if (node) selectNode(node.id);
-        }, 120);
-      });
-    });
-    meta.textContent = rooms.length + "개 동 · " + total + "명";
-    if (latest) meta.textContent += " · " + fmtTime(latest);
-    $("stTotal").textContent = String(total);
-    $("stDongs").textContent = String(rooms.length);
-    $("stNodes").textContent = String(NODES.length);
-    if (selectedId) selectNode(selectedId);
+      }).join("");
+    }
   }
+
+
   function loadRooms() {
     if (!BOARD_URL) return;
     fetch(BOARD_URL + "?action=rooms&cb=" + Date.now())
@@ -546,23 +531,19 @@
         return Promise.all(
           dongs.map(function (name) {
             return fetch(BOARD_URL + "?action=roomCount&room=" + encodeURIComponent(name) + "&cb=" + Date.now())
-              .then(function (r) {
-                return r.json();
-              })
+              .then(function (r) { return r.json(); })
               .then(function (j) {
                 return j && !j.error && j.room ? j : null;
               })
-              .catch(function () {
-                return null;
-              });
+              .catch(function () { return null; });
           })
         ).then(function (list) {
           renderRooms(list.filter(Boolean));
         });
       })
       .catch(function () {
-        $("liveMeta").textContent = "동기화 실패";
-        $("roomGrid").innerHTML = "<div class='empty' style='grid-column:1/-1'>네트워크를 확인한 뒤 새로고침 해 주세요</div>";
+        if ($("liveMeta")) $("liveMeta").textContent = "동기화 실패";
+        if ($("roomGrid")) $("roomGrid").innerHTML = "<div class='empty'>네트워크를 확인한 뒤 새로고침 해 주세요</div>";
       });
   }
 
@@ -1023,7 +1004,7 @@
   ];
 
   function renderGear(filter) {
-    var grid = $("gearGrid");
+    var grid = $("gearGrid"); if (!grid) return;
     if (!grid) return;
     filter = filter || "all";
     var html = "";
