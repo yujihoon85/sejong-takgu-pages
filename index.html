@@ -865,39 +865,38 @@ table{display:block;max-width:100%;overflow-x:auto}
 
 
 
-/* ── Interactive poster image-map (responsive) ── */
+
+/* ── Interactive poster image-map (fixed 16:9, hover labels) ── */
 .poster-wrap{
-  margin:10px 10px 14px;
-  --poster-r:20px;
+  margin:12px 12px 8px;
+  max-width:960px;
+  margin-left:auto;margin-right:auto;
 }
 .poster-stage{
   position:relative;
-  border-radius:var(--poster-r);
+  border-radius:18px;
   overflow:hidden;
-  background:#0a2540;
-  box-shadow:0 16px 48px rgba(15,23,42,.16);
+  background:#061a2e;
+  box-shadow:0 12px 40px rgba(15,23,42,.14);
   border:1px solid var(--line);
   width:100%;
-  /* keep 16:9 map coordinates stable */
-  aspect-ratio:16/9;
-  max-height:none;
+  aspect-ratio:16/9; /* always match source image */
   touch-action:manipulation;
 }
 .poster-img{
   position:absolute;inset:0;
   width:100%;height:100%;
   object-fit:cover;
-  object-position:center 42%;
+  object-position:center center;
   display:block;
   user-select:none;-webkit-user-drag:none;
-  pointer-events:none; /* clicks go to map layer */
+  pointer-events:none;
 }
 .poster-shade{
   position:absolute;inset:0;pointer-events:none;z-index:1;
-  background:
-    linear-gradient(180deg, rgba(3,20,40,.12) 0%, transparent 40%, rgba(3,12,28,.5) 100%);
+  background:linear-gradient(180deg, transparent 55%, rgba(3,12,28,.25) 100%);
+  opacity:.7;
 }
-/* percentage map layer — always matches image box */
 .poster-map{
   position:absolute;inset:0;z-index:2;
   width:100%;height:100%;
@@ -908,94 +907,94 @@ table{display:block;max-width:100%;overflow-x:auto}
   display:block;
 }
 .poster-map .zone{
-  fill:rgba(21,101,192,0);
-  stroke:rgba(255,255,255,0);
-  stroke-width:0.3;
+  fill:transparent;
+  stroke:transparent;
+  stroke-width:0.25;
   cursor:pointer;
-  transition:fill .2s ease, stroke .2s ease;
+  transition:fill .18s ease, stroke .18s ease;
   -webkit-tap-highlight-color:transparent;
 }
 .poster-map .zone:hover,
-.poster-map .zone:focus{
-  fill:rgba(21,101,192,.18);
-  stroke:rgba(255,255,255,.55);
+.poster-map .zone:focus,
+.poster-map .zone.is-hot{
+  fill:rgba(21,101,192,.16);
+  stroke:rgba(255,255,255,.45);
   outline:none;
 }
-.poster-map .zone:active{
-  fill:rgba(255,75,31,.22);
-}
+.poster-map .zone:active,
 .poster-map .zone.is-flash{
-  fill:rgba(21,101,192,.35);
-  stroke:rgba(255,255,255,.8);
+  fill:rgba(30,136,229,.28);
+  stroke:rgba(255,255,255,.75);
 }
 
-/* floating labels (visual only, pointer-events none — zone receives click) */
+/* labels: hidden until hover near zone */
 .poster-labels{
   position:absolute;inset:0;z-index:3;pointer-events:none;
 }
 .hs-tag{
   position:absolute;
-  transform:translate(-50%,-50%);
+  transform:translate(-50%,-120%);
   display:inline-flex;align-items:center;gap:5px;
-  padding:5px 9px 5px 5px;
+  padding:6px 10px;
   border-radius:999px;
-  background:rgba(255,255,255,.94);
-  border:1px solid rgba(255,255,255,.98);
-  box-shadow:0 6px 16px rgba(0,0,0,.2);
-  font-size:11px;font-weight:800;color:var(--ink);
+  background:rgba(15,23,42,.88);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.2);
+  box-shadow:0 8px 24px rgba(0,0,0,.28);
+  font-size:12px;font-weight:700;
   white-space:nowrap;
-  letter-spacing:-.02em;
-  max-width:42vw;
-  transition:transform .18s var(--ease), opacity .2s;
-}
-.hs-tag .d{
-  width:10px;height:10px;border-radius:50%;flex-shrink:0;
-  background:var(--blue);
-  box-shadow:0 0 0 3px rgba(21,101,192,.28);
-  animation:hsPulse 1.8s ease infinite;
-}
-@keyframes hsPulse{
-  0%,100%{box-shadow:0 0 0 3px rgba(21,101,192,.28)}
-  50%{box-shadow:0 0 0 7px rgba(21,101,192,0)}
-}
-/* label positions = zone centers (percent) */
-.tag-ai{left:74%;top:15%}
-.tag-learn{left:58%;top:20%}
-.tag-city{left:84%;top:36%}
-.tag-park{left:20%;top:38%}
-.tag-lounge{left:50%;top:56%}
-.tag-people{left:36%;top:74%}
-.tag-play{left:64%;top:74%}
-.tag-kakao{left:16%;top:74%}
-.tag-gamec{left:82%;top:76%}
-
-.poster-stats{
-  position:absolute;left:8px;right:8px;bottom:8px;z-index:4;
-  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .18s ease, transform .18s var(--ease), visibility .18s;
   pointer-events:none;
 }
+.hs-tag.is-on{
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,-140%);
+}
+.hs-tag .d{
+  width:8px;height:8px;border-radius:50%;
+  background:#4fc3f7;
+  box-shadow:0 0 0 3px rgba(79,195,247,.35);
+}
+/* no always-visible dots on image */
+.tag-ai{left:76%;top:16%}
+.tag-learn{left:57%;top:21%}
+.tag-city{left:83%;top:40%}
+.tag-park{left:20%;top:42%}
+.tag-lounge{left:50%;top:54%}
+.tag-people{left:26%;top:76%}
+.tag-play{left:60%;top:76%}
+.tag-kakao{left:9%;top:78%}
+.tag-gamec{left:85%;top:78%}
+
+/* stats BELOW image — not covering faces */
+.poster-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  margin-top:10px;
+}
 .poster-stats .ps{
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(8px);
-  border-radius:11px;
-  padding:7px 4px;text-align:center;
-  border:1px solid rgba(255,255,255,.85);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 8px;text-align:center;
+  box-shadow:var(--shadow-sm);
 }
 .poster-stats b{
   display:block;font-family:var(--display);
-  font-size:clamp(1rem,4.2vw,1.2rem);font-weight:700;color:var(--blue-deep);line-height:1;
+  font-size:1.35rem;font-weight:700;color:var(--blue-deep);line-height:1;
 }
 .poster-stats span{
-  display:block;margin-top:2px;font-size:10px;font-weight:700;color:var(--muted);
+  display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--muted);
 }
 
 .poster-hint{
   margin:10px 2px 0;text-align:center;
-  font-size:12px;font-weight:600;color:var(--muted);line-height:1.4;
+  font-size:12px;font-weight:600;color:var(--muted);line-height:1.45;
 }
 .poster-hint b{color:var(--blue-deep)}
 
-/* quick chips — primary nav on mobile */
 .poster-quick{
   display:grid;
   grid-template-columns:repeat(4,1fr);
@@ -1004,66 +1003,67 @@ table{display:block;max-width:100%;overflow-x:auto}
 }
 .poster-quick .pq{
   min-height:44px;padding:8px 6px;border-radius:14px;
-  font-size:12px;font-weight:800;text-align:center;
+  font-size:12.5px;font-weight:800;text-align:center;
   background:var(--surface);border:1px solid var(--line);color:var(--ink-2);
   box-shadow:var(--shadow-sm);
-  transition:background .2s, border-color .2s, transform .15s, color .2s, box-shadow .2s;
+  transition:background .2s, border-color .2s, transform .15s, color .2s;
   display:flex;align-items:center;justify-content:center;
   text-decoration:none;line-height:1.2;
   -webkit-tap-highlight-color:transparent;touch-action:manipulation;
 }
 .poster-quick .pq:hover{
   border-color:var(--blue-mid);background:var(--blue-soft);color:var(--blue-deep);
-  box-shadow:var(--shadow);
 }
 .poster-quick .pq:active{transform:scale(.97)}
-.poster-quick .pq.is-flash{
-  background:var(--blue);color:#fff;border-color:var(--blue);
-}
+.poster-quick .pq.is-flash{background:var(--blue);color:#fff;border-color:var(--blue)}
 
-/* mobile */
+/* promo video block under poster */
+.home-promo{
+  margin:14px 12px 16px;
+  max-width:960px;
+  margin-left:auto;margin-right:auto;
+  padding:16px;
+  border-radius:18px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+}
+.home-promo h3{
+  font-size:16px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px;
+}
+.home-promo .sub{
+  font-size:12.5px;color:var(--muted);font-weight:500;margin-bottom:12px;
+}
+.home-promo .video-wrap{
+  border-radius:14px;overflow:hidden;border:1px solid var(--line);
+  background:#0f172a;aspect-ratio:16/9;
+}
+.home-promo video{width:100%;height:100%;object-fit:cover;display:block}
+
 @media(max-width:480px){
-  .poster-wrap{margin:8px 8px 12px;--poster-r:16px}
-  .poster-stage{
-    /* slightly taller crop on phone for faces */
-    aspect-ratio:4/3;
-  }
-  .poster-img{object-position:center 48%}
-  .hs-tag{font-size:10px;padding:4px 7px 4px 4px}
-  .hs-tag .d{width:8px;height:8px}
-  /* hide less critical labels on narrow; zones still clickable */
-  .tag-learn,.tag-gamec,.tag-lounge{opacity:0;visibility:hidden}
-  .poster-stats{left:6px;right:6px;bottom:6px;gap:4px}
-  .poster-quick{grid-template-columns:repeat(4,1fr);gap:6px}
-  .poster-quick .pq{min-height:42px;font-size:11.5px;border-radius:12px;padding:6px 4px}
+  .poster-wrap{margin:8px 8px 6px}
+  .poster-stage{border-radius:14px}
+  .poster-quick{gap:6px}
+  .poster-quick .pq{min-height:42px;font-size:11.5px;border-radius:12px}
+  .poster-stats{gap:6px}
+  .poster-stats .ps{padding:10px 6px;border-radius:12px}
+  .poster-stats b{font-size:1.15rem}
+  .home-promo{margin:12px 8px 14px;padding:14px;border-radius:14px}
+  .hs-tag{font-size:11px}
 }
-@media(max-width:360px){
-  .poster-stage{aspect-ratio:1/1}
-  .tag-park,.tag-ai{font-size:9.5px}
-  .poster-quick{grid-template-columns:repeat(4,minmax(0,1fr))}
-}
-/* tablet+ */
 @media(min-width:640px){
-  .poster-wrap{margin:12px 14px 16px;--poster-r:22px}
-  .poster-stage{aspect-ratio:16/9;max-height:min(56vh,520px);margin-inline:auto}
-  .hs-tag{font-size:12.5px;padding:6px 11px 6px 6px}
-  .poster-quick{grid-template-columns:repeat(8,1fr);gap:8px}
-  .poster-quick .pq{min-height:40px;font-size:12.5px}
-  .tag-learn,.tag-gamec,.tag-lounge{opacity:1;visibility:visible}
+  .poster-quick{grid-template-columns:repeat(8,1fr)}
+  .poster-stage{border-radius:20px}
 }
 @media(min-width:960px){
-  .poster-stage{max-height:min(58vh,560px)}
-  .poster-map .zone:hover{fill:rgba(21,101,192,.22)}
+  .poster-wrap,.home-promo{padding-inline:0}
 }
 @media (prefers-reduced-motion:reduce){
-  .hs-tag .d{animation:none}
-  .poster-map .zone,.poster-quick .pq,.hs-tag{transition:none}
+  .hs-tag,.poster-map .zone,.poster-quick .pq{transition:none}
 }
-
-/* legacy hotspot classes (if any remain) */
-.hotspot{display:none!important}
 .hero{display:none!important}
 .arena-zones{display:none!important}
+.hotspot{display:none!important}
 
 </style>
 </head>
@@ -1092,14 +1092,15 @@ table{display:block;max-width:100%;overflow-x:auto}
     <section class="view on" data-view="home">
 
 
-      <!-- Responsive image-map poster -->
+
+      <!-- Responsive 16:9 image-map poster -->
       <div class="poster-wrap" id="posterWrap">
         <div class="poster-stage" id="posterStage">
           <img
             class="poster-img"
             id="posterImg"
             src="./media/sejong-smart-hero.jpg"
-            alt="세종 스마트 탁구 플랫폼 — AI로 연결되는 스마트 플레이"
+            alt="세종 스마트 탁구 플랫폼"
             width="1280"
             height="720"
             decoding="async"
@@ -1108,60 +1109,40 @@ table{display:block;max-width:100%;overflow-x:auto}
           />
           <div class="poster-shade" aria-hidden="true"></div>
 
-          <!-- SVG image map: viewBox 0–100 keeps zones responsive -->
           <div class="poster-map" id="posterMap" aria-label="포스터 메뉴 영역">
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="group">
-              <!-- AI panel (top-right HUD) -->
-              <rect class="zone" data-go="pulse" x="58" y="6" width="36" height="20" rx="2"
-                tabindex="0" role="button" aria-label="AI 소식"></rect>
-              <!-- Learn / coaching -->
-              <rect class="zone" data-go="learn" x="48" y="14" width="18" height="14" rx="2"
-                tabindex="0" role="button" aria-label="배움터"></rect>
-              <!-- City / towers → map -->
-              <rect class="zone" data-go="map" x="68" y="24" width="30" height="32" rx="2"
-                tabindex="0" role="button" aria-label="지도 코트"></rect>
-              <!-- Lake / park left → guide -->
-              <rect class="zone" data-go="guide" x="4" y="28" width="32" height="28" rx="2"
-                tabindex="0" role="button" aria-label="코트 가이드"></rect>
-              <!-- Center buildings / group upper → lounge -->
-              <rect class="zone" data-go="lounge" x="34" y="46" width="32" height="16" rx="2"
-                tabindex="0" role="button" aria-label="라운지"></rect>
-              <!-- People left → rooms -->
-              <rect class="zone" data-scroll="zone-bench" x="8" y="62" width="36" height="28" rx="2"
-                tabindex="0" role="button" aria-label="동별 인원"></rect>
-              <!-- People right → play -->
-              <rect class="zone" data-go="play" x="46" y="62" width="28" height="28" rx="2"
-                tabindex="0" role="button" aria-label="게임"></rect>
-              <!-- Far right person → game center -->
-              <rect class="zone" data-href="/game/" x="74" y="62" width="22" height="28" rx="2"
-                tabindex="0" role="button" aria-label="게임센터"></rect>
-              <!-- Kakao corner left bottom-ish -->
-              <rect class="zone" data-href="https://open.kakao.com/o/g51E976e" data-ext="1"
-                x="2" y="68" width="14" height="20" rx="2"
-                tabindex="0" role="button" aria-label="카톡방"></rect>
+              <rect class="zone" data-go="pulse" data-tag="tag-ai" x="58" y="6" width="36" height="20" rx="2" tabindex="0" role="button" aria-label="AI 소식"></rect>
+              <rect class="zone" data-go="learn" data-tag="tag-learn" x="48" y="14" width="18" height="14" rx="2" tabindex="0" role="button" aria-label="배움터"></rect>
+              <rect class="zone" data-go="map" data-tag="tag-city" x="68" y="24" width="30" height="32" rx="2" tabindex="0" role="button" aria-label="지도 코트"></rect>
+              <rect class="zone" data-go="guide" data-tag="tag-park" x="4" y="28" width="32" height="28" rx="2" tabindex="0" role="button" aria-label="코트 가이드"></rect>
+              <rect class="zone" data-go="lounge" data-tag="tag-lounge" x="34" y="46" width="32" height="16" rx="2" tabindex="0" role="button" aria-label="라운지"></rect>
+              <rect class="zone" data-scroll="zone-bench" data-tag="tag-people" x="8" y="62" width="36" height="28" rx="2" tabindex="0" role="button" aria-label="동별 인원"></rect>
+              <rect class="zone" data-go="play" data-tag="tag-play" x="46" y="62" width="28" height="28" rx="2" tabindex="0" role="button" aria-label="게임"></rect>
+              <rect class="zone" data-href="/game/" data-tag="tag-gamec" x="74" y="62" width="22" height="28" rx="2" tabindex="0" role="button" aria-label="게임센터"></rect>
+              <rect class="zone" data-href="https://open.kakao.com/o/g51E976e" data-ext="1" data-tag="tag-kakao" x="2" y="68" width="14" height="20" rx="2" tabindex="0" role="button" aria-label="카톡방"></rect>
             </svg>
           </div>
 
           <div class="poster-labels" aria-hidden="true">
-            <span class="hs-tag tag-ai"><i class="d"></i>AI 소식</span>
-            <span class="hs-tag tag-learn"><i class="d"></i>배움터</span>
-            <span class="hs-tag tag-city"><i class="d"></i>지도·코트</span>
-            <span class="hs-tag tag-park"><i class="d"></i>코트 가이드</span>
-            <span class="hs-tag tag-lounge"><i class="d"></i>라운지</span>
-            <span class="hs-tag tag-people"><i class="d"></i>동별 인원</span>
-            <span class="hs-tag tag-play"><i class="d"></i>게임</span>
-            <span class="hs-tag tag-kakao"><i class="d"></i>카톡방</span>
-            <span class="hs-tag tag-gamec"><i class="d"></i>게임센터</span>
-          </div>
-
-          <div class="poster-stats">
-            <div class="ps"><b class="tabular" id="stTotal">—</b><span>코트 인원</span></div>
-            <div class="ps"><b class="tabular" id="stDongs">—</b><span>동네</span></div>
-            <div class="ps"><b class="tabular" id="stNodes">15</b><span>노드</span></div>
+            <span class="hs-tag tag-ai" id="tag-ai">AI 소식</span>
+            <span class="hs-tag tag-learn" id="tag-learn">배움터</span>
+            <span class="hs-tag tag-city" id="tag-city">지도·코트</span>
+            <span class="hs-tag tag-park" id="tag-park">코트 가이드</span>
+            <span class="hs-tag tag-lounge" id="tag-lounge">라운지</span>
+            <span class="hs-tag tag-people" id="tag-people">동별 인원</span>
+            <span class="hs-tag tag-play" id="tag-play">게임</span>
+            <span class="hs-tag tag-kakao" id="tag-kakao">카톡방</span>
+            <span class="hs-tag tag-gamec" id="tag-gamec">게임센터</span>
           </div>
         </div>
 
-        <p class="poster-hint">포스터 <b>영역</b>을 터치하면 메뉴로 이동합니다 · 아래 버튼도 동일</p>
+        <div class="poster-stats">
+          <div class="ps"><b class="tabular" id="stTotal">—</b><span>코트 인원</span></div>
+          <div class="ps"><b class="tabular" id="stDongs">—</b><span>동네</span></div>
+          <div class="ps"><b class="tabular" id="stNodes">15</b><span>노드</span></div>
+        </div>
+
+        <p class="poster-hint">이미지 위를 가리키면 메뉴 이름이 나타납니다 · 클릭하면 이동합니다</p>
 
         <div class="poster-quick" aria-label="빠른 메뉴">
           <button type="button" class="pq" data-go="map">지도</button>
@@ -1175,121 +1156,20 @@ table{display:block;max-width:100%;overflow-x:auto}
         </div>
       </div>
 
-      <!-- 1 용품 코너 -->
-      <div class="acc panel" id="zone-gear" style="margin-bottom:14px">
-<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
-          <div>
-            <div class="zone-label">ZONE · PRO SHOP</div>
-            <h3>용품 코너</h3>
-            <p>선수 가방 속 · 라켓·러버·공·신발 가이드</p>
-          </div>
-        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
-<div class="acc-body"><div class="acc-body-inner"><div class="gear-tabs" id="gearTabs" role="tablist">
-          <button type="button" class="on" data-gear="all">전체</button>
-          <button type="button" data-gear="racket">라켓</button>
-          <button type="button" data-gear="rubber">러버</button>
-          <button type="button" data-gear="ball">공·용품</button>
-          <button type="button" data-gear="wear">신발·의류</button>
-        </div>
-        <div class="gear-grid" id="gearGrid"></div>
-        <p class="blurb" style="margin:12px 0 0;color:var(--subtle);font-size:12px;line-height:1.45">
-          ※ 추천은 커뮤니티 가이드용이며 특정 브랜드 광고가 아닙니다. 초보는 완성품부터, 중급부터 블레이드·러버 조합을 고민하세요.
-        </p></div></div>
-</div>
-
-      <!-- 2 탁구 서재 미리보기 -->
-      <div class="acc panel" id="zone-library" style="margin-bottom:14px">
-<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
-          <div>
-            <div class="zone-label">ZONE · LIBRARY</div>
-            <h3>탁구 서재</h3>
-            <p>코트 옆 책장 · 실전 가이드</p>
-          </div>
-          <button type="button" class="btn btn-ghost btn-sm" data-go="learn">서재 전체</button>
-        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
-<div class="acc-body"><div class="acc-body-inner"><div class="book-shelf" id="homeBookShelf"></div></div></div>
-</div>
-
-
-<div class="acc panel" style="margin-bottom:14px">
-<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
-          <div>
-            <div class="zone-label">ZONE · CENTER COURT</div>
-            <h3>동네 코트 지도</h3>
-            <p>시합장 플로어맵 · 클럽 · 복컴 · 동 거점</p>
-          </div>
-          <button type="button" class="btn btn-accent btn-sm" data-go="map">전체 지도</button>
-        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
-<div class="acc-body"><div class="acc-body-inner"><div class="home-map-shell">
-          <div class="map-hint">세종시 · Living Graph</div>
-          <div id="homeMap" role="img" aria-label="세종 탁구 코트 미니 지도"></div>
-          <div class="map-cta">
-            <button type="button" class="btn btn-primary btn-sm" data-go="map">지도 화면 열기</button>
-          </div>
-        </div>
-        <p class="blurb" style="margin:10px 0 0;color:var(--subtle);font-size:12.5px;line-height:1.45">
-          하단 <b>지도</b> 탭 · 마커 터치 시 연결선 · 인원은 카톡 봇과 같은 시트
-        </p></div></div>
-</div>
-
-      <div class="acc panel" style="margin-bottom:14px">
-<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
-          <div>
-            <div class="zone-label">ZONE · HIGHLIGHT REEL</div>
-            <h3>시합장 하이라이트</h3>
-            <p>주말 벙개 · 코트 모이는 하루 — 세종의 아침</p>
-          </div>
-        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
-<div class="acc-body"><div class="acc-body-inner"><div class="video-wrap">
-                    <video
-            id="promoVideo"
-            controls
-            playsinline
-            preload="metadata"
-            poster=""
-          >
+      <!-- 홍보 영상: 포스터 바로 아래 -->
+      <div class="home-promo" id="homePromo">
+        <h3>시합장 하이라이트 · 홍보 영상</h3>
+        <p class="sub">주말 벙개 · 코트에 모이는 하루 — 세종의 아침</p>
+        <div class="video-wrap">
+          <video id="promoVideo" controls playsinline preload="metadata" poster="">
             <source src="https://cdn.jsdelivr.net/gh/yujihoon85/sejong-takgu-pages@main/media/sejong-promo-web.mp4" type="video/mp4" />
             <source src="./media/sejong-promo-web.mp4" type="video/mp4" />
-            브라우저가 영상을 지원하지 않습니다.
           </video>
         </div>
-        <p class="blurb" style="margin:10px 0 0;color:var(--subtle);font-size:12.5px;line-height:1.45">
-          채팅방에 글 올리고, 라켓 챙기고, 복컴에서 인사하고, 즐탁 후 커피 한잔 — 웹 최적화 영상(약 15MB · H.264)입니다. 재생 안 되면 새로고침 해 주세요.
-        </p></div></div>
-</div>
+      </div>
 
-      <div class="acc panel" style="margin-bottom:14px">
-<div class="acc-toggle" role="button" tabindex="0" aria-expanded="false"><div class="acc-titles"><div class="panel-hd">
-          <div>
-            <h3>바로 가기</h3>
-            <p>카톡 방 · 충청이음</p>
-          </div>
-        </div></div><span class="acc-chev" aria-hidden="true">▾</span></div>
-<div class="acc-body"><div class="acc-body-inner"><div class="sister-grid">
-          
-          <a class="sister-link" id="linkKakao" href="https://open.kakao.com/o/g51E976e" target="_blank" rel="noopener">
-            <span class="ico" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3c-4.97 0-9 3.36-9 7.5 0 2.67 1.72 5.02 4.3 6.4L6 21l4.1-2.28c.6.1 1.24.16 1.9.16 4.97 0 9-3.36 9-7.5S16.97 3 12 3z"/></svg>
-            </span>
-            <span>
-              <b>카카오톡 탁구방 입장</b>
-              <small>세종시 어쩌다 운동하는 사람들 · 오픈채팅</small>
-            </span>
-            <span class="arr">→</span>
-          </a>
-
-          <a class="sister-link" id="linkEum" href="#" target="_blank" rel="noopener">
-            <span class="ico" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18l-6-3V5l6 3 6-3 6 3v10l-6-3-6 3z"/><path d="M9 8v10M15 5v10"/></svg>
-            </span>
-            <span>
-              <b>충청이음</b>
-              <small>충청 지역 축제·장소가 지도 위에서 이어지는 플랫폼</small>
-            </span>
-            <span class="arr">→</span>
-          </a>
-</div></div></div>
-</div>
+      <!-- 1 용품 코너 -->
+      
 
 
       <div class="acc panel yt-panel" style="margin-bottom:14px">
@@ -1738,7 +1618,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./games.js?v=6"></script>
-<script src="./app.js?v=7"></script>
+<script src="./app.js?v=8"></script>
 
 <a href="/game/" class="fab-game" style="position:fixed;right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:40;background:#1565c0;color:#fff;font-weight:800;font-size:13px;padding:12px 16px;border-radius:999px;text-decoration:none;box-shadow:0 10px 28px rgba(21,101,192,.35);font-family:inherit">게임센터</a>
 

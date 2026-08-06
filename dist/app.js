@@ -1137,6 +1137,7 @@
   }
 
 
+
   function initPosterMap() {
     var root = document.getElementById("posterMap");
     if (!root || root._bound) return;
@@ -1148,6 +1149,20 @@
       setTimeout(function () { el.classList.remove("is-flash"); }, 280);
     }
 
+    function showTag(zone, on) {
+      var id = zone.getAttribute("data-tag");
+      if (!id) return;
+      var tag = document.getElementById(id) || document.querySelector("." + id);
+      if (!tag) return;
+      if (on) {
+        tag.classList.add("is-on");
+        zone.classList.add("is-hot");
+      } else {
+        tag.classList.remove("is-on");
+        zone.classList.remove("is-hot");
+      }
+    }
+
     function activate(el) {
       if (!el) return;
       flash(el);
@@ -1155,10 +1170,7 @@
       var scroll = el.getAttribute("data-scroll");
       var href = el.getAttribute("data-href");
       var ext = el.getAttribute("data-ext");
-      if (goTo) {
-        go(goTo);
-        return;
-      }
+      if (goTo) { go(goTo); return; }
       if (scroll) {
         var target = document.getElementById(scroll);
         if (target) {
@@ -1172,9 +1184,7 @@
           if (homeBtn && !document.querySelector('.view[data-view="home"].on')) {
             homeBtn.click();
             setTimeout(goScroll, 80);
-          } else {
-            goScroll();
-          }
+          } else goScroll();
         }
         return;
       }
@@ -1185,6 +1195,12 @@
     }
 
     root.querySelectorAll(".zone").forEach(function (zone) {
+      zone.addEventListener("mouseenter", function () { showTag(zone, true); });
+      zone.addEventListener("mouseleave", function () { showTag(zone, false); });
+      zone.addEventListener("focus", function () { showTag(zone, true); });
+      zone.addEventListener("blur", function () { showTag(zone, false); });
+      // touch: brief label then navigate
+      zone.addEventListener("touchstart", function () { showTag(zone, true); }, { passive: true });
       zone.addEventListener("click", function (e) {
         e.preventDefault();
         activate(zone);
@@ -1197,13 +1213,11 @@
       });
     });
 
-    // quick chips flash sync
     document.querySelectorAll(".poster-quick .pq[data-go], .poster-quick .pq[data-scroll]").forEach(function (pq) {
-      pq.addEventListener("click", function () {
-        flash(pq);
-      });
+      pq.addEventListener("click", function () { flash(pq); });
     });
   }
+
 
   function initCourtEnter() {
     /* 3D 랠리 입장 화면 제거 — 바로 홈 */
