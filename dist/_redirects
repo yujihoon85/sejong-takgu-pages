@@ -1,4 +1,4 @@
-# static files first; SPA fallback only for unknown paths
-/game.html  /game.html  200
-/game       /game.html  200
-/*          /index.html 200
+# Cloudflare pretty URL: /game.html → /game
+# Serve game center at /game via dist/game/index.html
+/game.html   /game/   302
+/game        /game/   302

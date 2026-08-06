@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>🏓 세종탁구 게임센터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#08182E;
+    --table:#0A3D74;
+    --table-hi:#135A9E;
+    --line:#F4F8FC;
+    --ball:#FF8A1E;
+    --rubber:#E23B3B;
+    --ok:#2EBD6B;
+    --dim:rgba(244,248,252,.65);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic","맑은 고딕",sans-serif;
+    background:radial-gradient(120% 90% at 50% 0%, var(--table-hi) 0%, var(--table) 55%, #072B54 100%);
+    color:var(--line); min-height:100dvh; display:flex; flex-direction:column;
+  }
+  .jua{font-family:"Jua",-apple-system,"Apple SD Gothic Neo",sans-serif;letter-spacing:.5px}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--ball);outline-offset:2px;border-radius:8px}
+  header{
+    background:var(--ink); padding:10px 14px;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 2px 12px rgba(0,0,0,.35); position:sticky; top:0; z-index:20;
+  }
+  header .logo{font-size:19px;color:var(--line)}
+  header .logo b{color:var(--ball)}
+  header .sp{flex:1}
+  .chip{
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+    padding:7px 12px; border-radius:999px; font-size:13px; color:var(--line);
+    max-width:38vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .btn-rank{
+    background:var(--ball); color:#3A1D00; font-weight:800; font-size:14px;
+    padding:8px 14px; border-radius:999px; box-shadow:0 3px 0 #C4650A;
+  }
+  .btn-rank:active{transform:translateY(2px);box-shadow:0 1px 0 #C4650A}
+  main{flex:1; width:100%; max-width:560px; margin:0 auto; padding:14px 14px 28px}
+  .view{display:none}
+  .view.active{display:block; animation:pop .25s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .nick-row{display:flex;align-items:center;gap:8px;margin:2px 0 14px}
+  .nick-row label{font-size:13px;color:var(--dim);white-space:nowrap}
+  .nick-row input{
+    flex:1;background:rgba(8,24,46,.55);border:1.5px solid rgba(255,255,255,.25);
+    border-radius:10px;padding:10px 12px;color:var(--line);font-size:15px;min-width:0;
+  }
+  .nick-row input::placeholder{color:rgba(244,248,252,.4)}
+  .table{
+    position:relative; border:4px solid var(--line); border-radius:14px;
+    background:linear-gradient(180deg,#0F5096,#0B3F79);
+    padding:16px 12px; box-shadow:inset 0 0 40px rgba(0,0,0,.25), 0 10px 30px rgba(0,0,0,.3);
+  }
+  .table::before{
+    content:""; position:absolute; top:10px; bottom:10px; left:50%;
+    border-left:3px dashed rgba(244,248,252,.55); transform:translateX(-1.5px);
+  }
+  .net{
+    position:relative; height:14px; margin:10px -12px; z-index:2;
+    background:repeating-linear-gradient(90deg,rgba(244,248,252,.9) 0 3px,rgba(244,248,252,.15) 3px 8px);
+    border-top:2.5px solid var(--line); border-bottom:2.5px solid var(--line);
+  }
+  .ballb{
+    position:absolute; top:-13px; left:6%; width:20px; height:20px; border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, #FFC98A, var(--ball) 60%, #D96B00);
+    box-shadow:0 3px 6px rgba(0,0,0,.4);
+    animation:bounce 2.6s ease-in-out infinite;
+  }
+  @keyframes bounce{
+    0%{left:6%; transform:translateY(0)}
+    25%{transform:translateY(-26px)}
+    50%{left:calc(94% - 20px); transform:translateY(0)}
+    75%{transform:translateY(-26px)}
+    100%{left:6%; transform:translateY(0)}
+  }
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative;z-index:1}
+  .plate{
+    background:rgba(8,24,46,.6); border:1.5px solid rgba(255,255,255,.16);
+    border-radius:14px; padding:16px 10px 14px; text-align:center; color:var(--line);
+    transition:transform .12s ease, background .12s ease;
+  }
+  .plate:active{transform:scale(.96);background:rgba(8,24,46,.8)}
+  .plate .em{font-size:34px;display:block;margin-bottom:6px}
+  .plate .nm{font-size:18px;display:block}
+  .plate .ds{font-size:11.5px;color:var(--dim);display:block;margin-top:4px;line-height:1.45}
+  .plate .best{
+    display:inline-block;margin-top:8px;font-size:11px;font-weight:700;
+    background:rgba(255,138,30,.18);color:#FFC489;border:1px solid rgba(255,138,30,.5);
+    padding:2px 9px;border-radius:999px;
+  }
+  .home-foot{text-align:center;color:var(--dim);font-size:12px;margin-top:16px}
+  .g-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .btn-back{font-size:14px;color:var(--dim);padding:8px 10px 8px 4px}
+  .g-title{font-size:21px}
+  .g-stat{margin-left:auto;font-size:14px;color:#FFC489;white-space:nowrap}
+  .panel{
+    background:rgba(8,24,46,.55); border:1.5px solid rgba(255,255,255,.14);
+    border-radius:16px; padding:16px;
+  }
+  .btn-main{
+    display:block;width:100%;background:var(--ball);color:#3A1D00;
+    font-size:17px;font-weight:800;padding:14px;border-radius:12px;margin-top:12px;
+    box-shadow:0 4px 0 #C4650A;
+  }
+  .btn-main:active{transform:translateY(2px);box-shadow:0 2px 0 #C4650A}
+  .btn-sub{
+    display:block;width:100%;background:rgba(255,255,255,.1);color:var(--line);
+    font-size:15px;padding:12px;border-radius:12px;margin-top:10px;
+    border:1px solid rgba(255,255,255,.2);
+  }
+  .row2{display:flex;gap:10px}
+  .row2>*{flex:1}
+  .result{text-align:center}
+  .result .big{font-size:44px;color:var(--ball);margin:8px 0 2px}
+  .result .sub{color:var(--dim);font-size:14px}
+  .r-status{margin-top:12px;font-size:13.5px;color:#9FD6FF;min-height:20px;line-height:1.5}
+  .q-prog{display:flex;gap:5px;margin-bottom:14px}
+  .q-prog i{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.15)}
+  .q-prog i.on{background:var(--ball)}
+  .q-prog i.ok{background:var(--ok)}
+  .q-prog i.no{background:var(--rubber)}
+  .q-text{font-size:18px;line-height:1.5;margin-bottom:14px;min-height:54px}
+  .q-opt{
+    display:block;width:100%;text-align:left;background:rgba(255,255,255,.07);
+    border:1.5px solid rgba(255,255,255,.18);border-radius:12px;
+    padding:13px 14px;font-size:15.5px;color:var(--line);margin-top:9px;line-height:1.4;
+  }
+  .q-opt:not(:disabled):active{background:rgba(255,255,255,.16)}
+  .q-opt.ok{background:rgba(46,189,107,.22);border-color:var(--ok)}
+  .q-opt.no{background:rgba(226,59,59,.22);border-color:var(--rubber)}
+  .q-exp{
+    margin-top:12px;background:rgba(255,138,30,.1);border-left:3px solid var(--ball);
+    padding:10px 12px;border-radius:0 10px 10px 0;font-size:13.5px;line-height:1.55;color:#FFE0C0;
+  }
+  #pong-wrap{position:relative}
+  #pong{
+    display:block;width:100%;border-radius:14px;border:3px solid var(--line);
+    background:#0B3F79;touch-action:none;
+  }
+  .pong-hint{text-align:center;color:var(--dim);font-size:12.5px;margin-top:8px}
+  .c-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .cardc{aspect-ratio:3/4;perspective:600px}
+  .cardc .in{
+    position:relative;width:100%;height:100%;transition:transform .4s;
+    transform-style:preserve-3d;
+  }
+  .cardc.flip .in{transform:rotateY(180deg)}
+  .cardc .f,.cardc .b{
+    position:absolute;inset:0;backface-visibility:hidden;border-radius:11px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  }
+  .cardc .f{
+    background:linear-gradient(145deg,#E9504F,#C22B2B);
+    border:2px solid rgba(255,255,255,.35);font-size:22px;
+  }
+  .cardc .b{
+    background:var(--line);color:var(--ink);transform:rotateY(180deg);
+    border:2px solid var(--ball);
+  }
+  .cardc .b .em{font-size:clamp(20px,7vw,30px)}
+  .cardc .b .tx{font-size:clamp(10px,3vw,12.5px);font-weight:800}
+  .cardc.done .b{background:#DFF7E8;border-color:var(--ok);opacity:.85}
+  .w-hint{
+    background:rgba(255,138,30,.1);border-left:3px solid var(--ball);
+    padding:10px 12px;border-radius:0 10px 10px 0;font-size:14px;line-height:1.5;
+    color:#FFE0C0;margin-bottom:14px;
+  }
+  .w-slots{display:flex;gap:8px;justify-content:center;min-height:56px;margin-bottom:16px;flex-wrap:wrap}
+  .w-slot{
+    width:50px;height:56px;border-radius:10px;border:2px dashed rgba(255,255,255,.35);
+    display:flex;align-items:center;justify-content:center;font-size:24px;
+  }
+  .w-slot.fill{border-style:solid;border-color:var(--ball);background:rgba(255,138,30,.15)}
+  .w-slots.good .w-slot{border-color:var(--ok);background:rgba(46,189,107,.2)}
+  .w-slots.bad{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  .w-tiles{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+  .w-tile{
+    width:54px;height:58px;border-radius:11px;background:var(--line);color:var(--ink);
+    font-size:24px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.35);
+  }
+  .w-tile:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .w-tile:disabled{opacity:.25;box-shadow:none}
+  .modal{
+    position:fixed;inset:0;background:rgba(4,12,24,.75);display:none;
+    align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .modal.open{display:flex}
+  .m-box{
+    background:var(--ink);width:100%;max-width:560px;max-height:82dvh;overflow:auto;
+    border-radius:22px 22px 0 0;padding:18px 16px 26px;
+    border-top:3px solid var(--ball);
+  }
+  @media (min-width:600px){ .modal{align-items:center}.m-box{border-radius:22px} }
+  .m-head{display:flex;align-items:center;margin-bottom:12px}
+  .m-head h2{font-size:20px}
+  .m-close{margin-left:auto;font-size:22px;color:var(--dim);padding:4px 10px}
+  .m-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .m-tab{
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+    padding:8px 12px;border-radius:999px;font-size:13px;color:var(--line);
+  }
+  .m-tab.on{background:var(--ball);color:#3A1D00;font-weight:800;border-color:var(--ball)}
+  .r-list{list-style:none}
+  .r-list li{
+    display:flex;align-items:center;gap:10px;padding:11px 8px;
+    border-bottom:1px solid rgba(255,255,255,.08);font-size:15px;
+  }
+  .r-list .rk{width:36px;text-align:center;font-size:16px}
+  .r-list .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .r-list .sc{color:var(--ball);font-weight:800;font-variant-numeric:tabular-nums}
+  .r-list .tm{font-size:11px;color:var(--dim)}
+  .r-list li.me{background:rgba(255,138,30,.12);border-radius:10px}
+  .m-note{color:var(--dim);font-size:13px;line-height:1.6;padding:8px 4px}
+  #toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--line);padding:11px 18px;border-radius:999px;
+    font-size:14px;border:1px solid rgba(255,255,255,.25);opacity:0;pointer-events:none;
+    transition:.25s;z-index:60;max-width:88vw;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .back-platform{
+    display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;
+    color:var(--dim);font-size:13px;text-decoration:none;
+  }
+  .back-platform:hover{color:var(--ball)}
+  @media (prefers-reduced-motion: reduce){
+    .ballb{animation:none}
+    .cardc .in{transition:none}
+    .view.active{animation:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo jua">🏓 세종탁구 <b>게임센터</b></div>
+  <div class="sp"></div>
+  <div class="chip" id="nick-chip">닉네임 없음</div>
+  <button class="btn-rank" id="btn-rank-top">🏆 랭킹</button>
+</header>
+<main>
+  <a class="back-platform" href="./index.html">← 시합장 홈</a>
+  <section class="view active" id="v-home">
+    <div class="nick-row">
+      <label for="nick">랭킹용 닉네임</label>
+      <input id="nick" maxlength="20" placeholder="카톡 닉네임 입력 (예: 세종이)">
+    </div>
+    <div class="table" aria-label="게임 선택">
+      <div class="grid">
+        <button class="plate" data-go="quiz">
+          <span class="em">🧠</span>
+          <span class="nm jua">탁구 퀴즈</span>
+          <span class="ds">규칙·용어 10문제<br>해설까지 꼼꼼히</span>
+          <span class="best" id="best-quiz">최고 -</span>
+        </button>
+        <button class="plate" data-go="pong">
+          <span class="em">🏓</span>
+          <span class="nm jua">핑퐁 아케이드</span>
+          <span class="ds">AI와 11점 승부<br>듀스도 진짜처럼</span>
+          <span class="best" id="best-pong">최고 -</span>
+        </button>
+      </div>
+      <div class="net"><span class="ballb" aria-hidden="true"></span></div>
+      <div class="grid">
+        <button class="plate" data-go="card">
+          <span class="em">🃏</span>
+          <span class="nm jua">카드 짝맞추기</span>
+          <span class="ds">탁구 카드 8쌍<br>빠르고 정확하게</span>
+          <span class="best" id="best-card">최고 -</span>
+        </button>
+        <button class="plate" data-go="word">
+          <span class="em">🧩</span>
+          <span class="nm jua">낱말 퍼즐</span>
+          <span class="ds">글자를 눌러<br>탁구 용어 완성</span>
+          <span class="best" id="best-word">최고 -</span>
+        </button>
+      </div>
+    </div>
+    <p class="home-foot">세종탁구방 · 오늘도 즐탁! 🧡</p>
+  </section>
+  <section class="view" id="v-quiz">
+    <div class="g-top">
+      <button class="btn-back" data-go="home">← 홈</button>
+      <h1 class="g-title jua">🧠 탁구 퀴즈</h1>
+      <span class="g-stat" id="q-score">0점</span>
+    </div>
+    <div class="panel" id="q-play">
+      <div class="q-prog" id="q-prog"></div>
+      <p class="q-text" id="q-text"></p>
+      <div id="q-opts"></div>
+      <div class="q-exp" id="q-exp" hidden></div>
+      <button class="btn-main" id="q-next" hidden>다음 문제 ▶</button>
+    </div>
+    <div class="panel result" id="q-result" hidden>
+      <p class="sub">퀴즈 완료!</p>
+      <p class="big jua" id="q-final">0점</p>
+      <p class="sub" id="q-final-sub"></p>
+      <p class="r-status" id="q-status"></p>
+      <div class="row2">
+        <button class="btn-main" data-restart="quiz">다시 도전</button>
+        <button class="btn-sub" data-openrank="quiz">🏆 랭킹 보기</button>
+      </div>
+      <button class="btn-sub" data-go="home">홈으로</button>
+    </div>
+  </section>
+  <section class="view" id="v-pong">
+    <div class="g-top">
+      <button class="btn-back" data-go="home">← 홈</button>
+      <h1 class="g-title jua">🏓 핑퐁 아케이드</h1>
+      <span class="g-stat" id="p-stat">11점 선취!</span>
+    </div>
+    <div id="pong-wrap" class="panel" style="padding:10px">
+      <canvas id="pong"></canvas>
+      <p class="pong-hint">터치 드래그 / 마우스 / ← → 키로 라켓 이동 · 화면을 탭하면 서브!</p>
+    </div>
+    <div class="panel result" id="p-result" hidden>
+      <p class="sub" id="p-win-text">경기 종료</p>
+      <p class="big jua" id="p-final">0 : 0</p>
+      <p class="sub" id="p-final-sub"></p>
+      <p class="r-status" id="p-status"></p>
+      <div class="row2">
+        <button class="btn-main" data-restart="pong">한 판 더!</button>
+        <button class="btn-sub" data-openrank="pong">🏆 랭킹 보기</button>
+      </div>
+      <button class="btn-sub" data-go="home">홈으로</button>
+    </div>
+  </section>
+  <section class="view" id="v-card">
+    <div class="g-top">
+      <button class="btn-back" data-go="home">← 홈</button>
+      <h1 class="g-title jua">🃏 짝맞추기</h1>
+      <span class="g-stat" id="c-stat">0회 · 0초</span>
+    </div>
+    <div class="panel" id="c-play">
+      <div class="c-grid" id="c-grid"></div>
+    </div>
+    <div class="panel result" id="c-result" hidden>
+      <p class="sub">모든 짝을 찾았어요! 👏</p>
+      <p class="big jua" id="c-final">0점</p>
+      <p class="sub" id="c-final-sub"></p>
+      <p class="r-status" id="c-status"></p>
+      <div class="row2">
+        <button class="btn-main" data-restart="card">다시 도전</button>
+        <button class="btn-sub" data-openrank="card">🏆 랭킹 보기</button>
+      </div>
+      <button class="btn-sub" data-go="home">홈으로</button>
+    </div>
+  </section>
+  <section class="view" id="v-word">
+    <div class="g-top">
+      <button class="btn-back" data-go="home">← 홈</button>
+      <h1 class="g-title jua">🧩 낱말 퍼즐</h1>
+      <span class="g-stat" id="w-stat">1/10 · 0점</span>
+    </div>
+    <div class="panel" id="w-play">
+      <div class="w-hint" id="w-hint"></div>
+      <div class="w-slots" id="w-slots"></div>
+      <div class="w-tiles" id="w-tiles"></div>
+      <div class="row2" style="margin-top:16px">
+        <button class="btn-sub" id="w-undo">⌫ 지우기</button>
+        <button class="btn-sub" id="w-hintbtn">💡 힌트 (60점)</button>
+        <button class="btn-sub" id="w-pass">통과 ▶</button>
+      </div>
+    </div>
+    <div class="panel result" id="w-result" hidden>
+      <p class="sub">낱말 퍼즐 완료!</p>
+      <p class="big jua" id="w-final">0점</p>
+      <p class="sub" id="w-final-sub"></p>
+      <p class="r-status" id="w-status"></p>
+      <div class="row2">
+        <button class="btn-main" data-restart="word">다시 도전</button>
+        <button class="btn-sub" data-openrank="word">🏆 랭킹 보기</button>
+      </div>
+      <button class="btn-sub" data-go="home">홈으로</button>
+    </div>
+  </section>
+</main>
+<div class="modal" id="rank-modal" role="dialog" aria-label="랭킹">
+  <div class="m-box">
+    <div class="m-head">
+      <h2 class="jua">🏆 세종탁구방 게임 랭킹</h2>
+      <button class="m-close" id="rank-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="m-tabs" id="rank-tabs"></div>
+    <div id="rank-body"><p class="m-note">불러오는 중…</p></div>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxCvR-8Sbk3e7UJzQ4zc6CVDbKbKLEqvKdMmy5TD-CCqVK019eHytT45tlRP1uaXlrT/exec";
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const GAMES = { quiz:"탁구 퀴즈", pong:"핑퐁 아케이드", card:"카드 짝맞추기", word:"낱말 퍼즐" };
+const bests = { quiz:0, pong:0, card:0, word:0 };
+function esc(s){
+  s = String(s == null ? "" : s);
+  return s.replace(/&/g, "&"+"amp;").replace(/</g, "&"+"lt;").replace(/>/g, "&"+"gt;").replace(/"/g, "&"+"quot;").replace(/'/g, "&#39;");
+}
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove("show"),2400); }
+let AC=null;
+addEventListener("pointerdown",()=>{ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } },{once:true});
+function beep(freq=600,dur=0.06,vol=0.08){
+  if(!AC) return;
+  try{
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.frequency.value=freq; o.type="triangle";
+    g.gain.setValueAtTime(vol,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+dur);
+    o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime+dur);
+  }catch(e){}
+}
+const nickInput=$("#nick");
+function nick(){ return nickInput.value.trim().slice(0,20); }
+function syncNick(){ $("#nick-chip").textContent = nick() ? ("👤 "+nick()) : "닉네임 없음"; }
+try{
+  const p=new URLSearchParams(location.search).get("n");
+  if(p) nickInput.value=p.slice(0,20);
+}catch(e){}
+nickInput.addEventListener("input",syncNick); syncNick();
+function show(id){
+  Pong.stop(); Card.stopTimer();
+  $$(".view").forEach(v=>v.classList.remove("active"));
+  $("#v-"+id).classList.add("active");
+  if(id==="quiz") Quiz.start();
+  if(id==="pong") Pong.start();
+  if(id==="card") Card.start();
+  if(id==="word") Word.start();
+  window.scrollTo(0,0);
+}
+document.addEventListener("click",e=>{
+  const go=e.target.closest("[data-go]"); if(go){ show(go.dataset.go); return; }
+  const rs=e.target.closest("[data-restart]"); if(rs){ show(rs.dataset.restart); return; }
+  const or_=e.target.closest("[data-openrank]"); if(or_){ Rank.open(or_.dataset.openrank); return; }
+});
+$("#btn-rank-top").addEventListener("click",()=>Rank.open("quiz"));
+function updateBadge(game){
+  $("#best-"+game).textContent = bests[game] ? ("최고 "+bests[game]+"점") : "최고 -";
+}
+async function submitScore(game, score, statusEl){
+  if(score>bests[game]){ bests[game]=score; updateBadge(game); }
+  if(!API_URL){
+    statusEl.textContent="※ 서버 미연결 상태 — 점수는 이번 접속 동안만 기억돼요.";
+    return;
+  }
+  const n=nick();
+  if(!n){ statusEl.textContent="홈 화면에서 닉네임을 입력하면 방 랭킹에 올라가요! 🏆"; return; }
+  statusEl.textContent="랭킹 등록 중…";
+  try{
+    const res=await fetch(API_URL,{
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"gameScore", n, game, score})
+    });
+    const d=await res.json();
+    if(d && d.ok){
+      Rank.clearCache();
+      statusEl.textContent = d.rank
+        ? `🏆 랭킹 등록! 현재 ${d.rank}위 / ${d.total}명 · 내 최고 ${d.best}점`
+        : "🏆 랭킹 등록 완료!";
+    }else{
+      statusEl.textContent="등록 실패: "+((d&&d.error)||"알 수 없는 오류");
+    }
+  }catch(err){
+    statusEl.textContent="서버 연결 실패 — GAS에 gameScore가 배포됐는지 확인해 주세요.";
+  }
+}
+const QUIZ_POOL=[
+  {q:"탁구 한 게임(세트)은 몇 점을 먼저 얻으면 이길까요?",o:["11점","15점","21점","7점"],a:0,
+   e:"2001년부터 11점제예요. 단, 10:10(듀스)이 되면 2점 차이가 날 때까지 계속! 21점은 옛날 규칙이랍니다."},
+  {q:"서브는 몇 점마다 상대와 교대하나요?",o:["2점","1점","3점","5점"],a:0,
+   e:"2점마다 서브를 교대해요. 듀스(10:10)부터는 1점마다 교대합니다."},
+  {q:"서브할 때 공을 손바닥에서 최소 몇 cm 이상 던져 올려야 할까요?",o:["16cm","5cm","10cm","30cm"],a:0,
+   e:"거의 수직으로 16cm 이상 던져야 해요. 손바닥을 펴서 공이 잘 보이게 하는 것도 규칙!"},
+  {q:"공식 탁구공의 지름은?",o:["40mm","38mm","44mm","35mm"],a:0,
+   e:"2000년부터 40mm를 사용해요. 재질도 셀룰로이드에서 플라스틱으로 바뀌었죠."},
+  {q:"라켓 러버(고무) 색 규정으로 맞는 것은?",o:["한 면은 반드시 검정색","양면 모두 빨강 가능","아무 색이나 자유","양면이 같은 색이어야 함"],a:0,
+   e:"한 면은 검정, 반대 면은 빨강 같은 밝은색이어야 해요. 상대가 어떤 면으로 쳤는지 회전을 구분하기 위해서랍니다."},
+  {q:"10:10 동점(듀스)이 되면 승부는 어떻게 날까요?",o:["2점 차이가 날 때까지","먼저 11점이면 끝","서든데스 한 점 승부","가위바위보"],a:0,
+   e:"12:10, 13:11처럼 2점 차이가 나야 끝나요. 이때부터 서브는 1점씩 교대!"},
+  {q:"탁구 네트의 높이는 몇 cm일까요?",o:["15.25cm","20cm","10cm","25cm"],a:0,
+   e:"15.25cm(6인치)예요. 테이블 폭 전체에 걸쳐 있어요."},
+  {q:"공이 테이블 윗면 모서리(엣지)에 살짝 맞았다면?",o:["유효 — 득점 인정","무효 — 다시 침","상대방 점수","심판 마음대로"],a:0,
+   e:"윗면 모서리에 스치면 유효한 '엣지볼'이에요. 대신 옆면(사이드)에 맞으면 아웃!"},
+  {q:"'커트'는 어떤 회전을 거는 기술일까요?",o:["하회전(백스핀)","상회전(톱스핀)","무회전","옆회전만"],a:0,
+   e:"공 아래쪽을 깎아서 하회전을 거는 기술이에요. 반대로 '드라이브'는 강한 상회전!"},
+  {q:"펜을 쥐듯 라켓을 잡는 그립의 이름은?",o:["펜홀더","셰이크핸드","이글 그립","포크 그립"],a:0,
+   e:"펜홀더 그립이에요. 악수하듯 잡으면 셰이크핸드! 두 그립이 대표 주자랍니다."},
+  {q:"탁구가 올림픽 정식 종목이 된 대회는?",o:["1988 서울","1964 도쿄","2000 시드니","1976 몬트리올"],a:0,
+   e:"1988 서울 올림픽부터예요. 이 대회에서 한국이 유남규(남자 단식), 양영자·현정화(여자 복식) 금메달을 땄죠!"},
+  {q:"세종탁구방 용어! '복컴'은 무엇의 줄임말일까요?",o:["복합커뮤니티센터","복식 컴퓨터","복근 컴백","복리 컴퍼니"],a:0,
+   e:"동네 복합커뮤니티센터! 우리 방 사람들이 즐탁하는 곳이죠. '벙개'는 즉석 모임이라는 뜻이에요."}
+];
+const Quiz={
+  list:[], idx:0, score:0, done:false,
+  start(){
+    this.list=shuffle(QUIZ_POOL).slice(0,10);
+    this.idx=0; this.score=0; this.done=false;
+    $("#q-result").hidden=true; $("#q-play").hidden=false;
+    $("#q-prog").innerHTML=this.list.map(()=>"<i></i>").join("");
+    this.render();
+  },
+  render(){
+    const item=this.list[this.idx];
+    $$("#q-prog i").forEach((el,i)=>el.classList.toggle("on",i===this.idx));
+    $("#q-score").textContent=this.score+"점";
+    $("#q-text").textContent=(this.idx+1)+". "+item.q;
+    $("#q-exp").hidden=true; $("#q-next").hidden=true;
+    const order=shuffle(item.o.map((t,i)=>({t,i})));
+    $("#q-opts").innerHTML=order.map(o=>`<button class="q-opt" data-i="${o.i}">${esc(o.t)}</button>`).join("");
+    $$("#q-opts .q-opt").forEach(btn=>btn.addEventListener("click",()=>this.answer(btn,item)));
+  },
+  answer(btn,item){
+    if(this.done) return;
+    const pick=Number(btn.dataset.i), correct=pick===item.a;
+    $$("#q-opts .q-opt").forEach(b=>{
+      b.disabled=true;
+      if(Number(b.dataset.i)===item.a) b.classList.add("ok");
+    });
+    if(!correct) btn.classList.add("no");
+    const dot=$$("#q-prog i")[this.idx];
+    dot.classList.remove("on"); dot.classList.add(correct?"ok":"no");
+    if(correct){ this.score+=100; beep(880,.09); } else { beep(180,.15); }
+    $("#q-score").textContent=this.score+"점";
+    $("#q-exp").textContent="💬 "+item.e; $("#q-exp").hidden=false;
+    $("#q-next").textContent=(this.idx===this.list.length-1)?"결과 보기 🏁":"다음 문제 ▶";
+    $("#q-next").hidden=false;
+  },
+  finish(){
+    this.done=true;
+    $("#q-play").hidden=true; $("#q-result").hidden=false;
+    $("#q-final").textContent=this.score+"점";
+    const n=this.score/100;
+    $("#q-final-sub").textContent=
+      n>=9?"탁구 박사! 심판 보셔도 되겠어요 🥇":
+      n>=6?"수준급! 코트에서 아는 척 가능 😎":
+      n>=3?"기본기 장착 중! 한 판 더? 💪":"괜찮아요, 해설 읽으면 금방 늘어요 🌱";
+    submitScore("quiz",this.score,$("#q-status"));
+  }
+};
+$("#q-next").addEventListener("click",()=>{
+  if(Quiz.idx===Quiz.list.length-1){ Quiz.finish(); }
+  else { Quiz.idx++; Quiz.render(); }
+});
+const Pong={
+  cv:null,ctx:null,W:0,H:0,dpr:1,raf:0,last:0,
+  state:"idle",
+  me:{x:0,y:0,w:0,h:12}, ai:{x:0,y:0,w:0,h:12},
+  ball:{x:0,y:0,vx:0,vy:0,r:9,speed:0},
+  sc:{me:0,ai:0}, server:"me", servesLeft:2, rally:0,
+  keys:{L:false,R:false},
+  bound:false,
+  start(){
+    this.cv=$("#pong"); this.ctx=this.cv.getContext("2d");
+    this.resize();
+    this.sc={me:0,ai:0}; this.server="me"; this.servesLeft=2; this.rally=0;
+    $("#p-result").hidden=true; $("#pong-wrap").hidden=false;
+    this.me.x=this.W/2; this.ai.x=this.W/2;
+    this.setState("serve");
+    this.bind();
+    this.last=performance.now();
+    cancelAnimationFrame(this.raf);
+    const loop=t=>{ this.step(Math.min((t-this.last)/1000,.033)); this.last=t; this.raf=requestAnimationFrame(loop); };
+    this.raf=requestAnimationFrame(loop);
+  },
+  stop(){ cancelAnimationFrame(this.raf); this.raf=0; this.state="idle"; },
+  resize(){
+    const wrap=$("#pong-wrap");
+    const w=Math.min(wrap.clientWidth-20, 520);
+    const h=Math.max(360, Math.min(Math.round(w*1.25), Math.round(window.innerHeight*0.62)));
+    this.dpr=Math.min(window.devicePixelRatio||1,2);
+    this.W=w; this.H=h;
+    this.cv.style.height=h+"px";
+    this.cv.width=Math.round(w*this.dpr); this.cv.height=Math.round(h*this.dpr);
+    this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
+    this.me.w=this.ai.w=Math.max(70,Math.round(w*0.24));
+    this.me.y=h-26; this.ai.y=26;
+  },
+  bind(){
+    if(this.bound) return; this.bound=true;
+    const px=e=>{
+      const r=this.cv.getBoundingClientRect();
+      return (e.clientX-r.left);
+    };
+    this.cv.addEventListener("pointerdown",e=>{
+      e.preventDefault();
+      this.me.x=this.clampMe(px(e));
+      if(this.state==="serve") this.serve();
+    });
+    this.cv.addEventListener("pointermove",e=>{
+      if(e.buttons||e.pointerType==="touch") { e.preventDefault(); this.me.x=this.clampMe(px(e)); }
+      else if(e.pointerType==="mouse"){ this.me.x=this.clampMe(px(e)); }
+    });
+    addEventListener("keydown",e=>{
+      if(!$("#v-pong").classList.contains("active")) return;
+      if(e.key==="ArrowLeft"){ this.keys.L=true; e.preventDefault(); }
+      if(e.key==="ArrowRight"){ this.keys.R=true; e.preventDefault(); }
+      if((e.key===" "||e.key==="Enter") && this.state==="serve"){ this.serve(); e.preventDefault(); }
+    });
+    addEventListener("keyup",e=>{
+      if(e.key==="ArrowLeft") this.keys.L=false;
+      if(e.key==="ArrowRight") this.keys.R=false;
+    });
+    addEventListener("resize",()=>{ if($("#v-pong").classList.contains("active")) this.resize(); });
+  },
+  clampMe(x){ return Math.max(this.me.w/2+6, Math.min(this.W-this.me.w/2-6, x)); },
+  setState(s){ this.state=s; },
+  deuce(){ return this.sc.me>=10 && this.sc.ai>=10; },
+  serve(){
+    const b=this.ball;
+    b.speed=340; this.rally=0;
+    const fromMe=this.server==="me";
+    b.x=fromMe?this.me.x:this.ai.x;
+    b.y=fromMe?this.me.y-18:this.ai.y+18;
+    const ang=(Math.random()*0.8-0.4);
+    b.vx=Math.sin(ang)*b.speed;
+    b.vy=(fromMe?-1:1)*Math.cos(ang)*b.speed;
+    beep(520,.06);
+    this.setState("play");
+  },
+  point(who){
+    this.sc[who]++; beep(who==="me"?900:220,.14);
+    const a=this.sc.me,b=this.sc.ai;
+    if((a>=11||b>=11)&&Math.abs(a-b)>=2){ this.gameOver(a>b); return; }
+    this.servesLeft--;
+    if(this.deuce()) this.servesLeft=Math.min(this.servesLeft,0);
+    if(this.servesLeft<=0){
+      this.server=(this.server==="me")?"ai":"me";
+      this.servesLeft=this.deuce()?1:2;
+    }
+    this.setState("serve");
+    if(this.server==="ai"){ setTimeout(()=>{ if(this.state==="serve") this.serve(); },700); }
+  },
+  gameOver(win){
+    this.setState("over"); cancelAnimationFrame(this.raf); this.raf=0;
+    const score=this.sc.me*50+(win?500:0);
+    $("#pong-wrap").hidden=true; $("#p-result").hidden=false;
+    $("#p-win-text").textContent=win?"🎉 승리! 나이스 게임!":"아쉽다! AI가 한 수 위였네요";
+    $("#p-final").textContent=`나 ${this.sc.me} : ${this.sc.ai} AI`;
+    $("#p-final-sub").textContent=`획득 점수 ${score}점 (득점×50${win?" + 승리 500":""})`;
+    submitScore("pong",score,$("#p-status"));
+  },
+  step(dt){
+    if(this.state==="idle"||this.state==="over") return;
+    const kv=520*dt;
+    if(this.keys.L) this.me.x=this.clampMe(this.me.x-kv);
+    if(this.keys.R) this.me.x=this.clampMe(this.me.x+kv);
+    const aiSpd=(250+Math.min(this.rally*14,190))*dt;
+    const target=(this.state==="play"&&this.ball.vy<0)?this.ball.x:this.W/2;
+    const wobble=Math.sin(performance.now()/400)*14;
+    const dx=(target+wobble)-this.ai.x;
+    this.ai.x+=Math.max(-aiSpd,Math.min(aiSpd,dx));
+    this.ai.x=Math.max(this.ai.w/2+6,Math.min(this.W-this.ai.w/2-6,this.ai.x));
+    if(this.state==="play"){
+      const b=this.ball;
+      b.x+=b.vx*dt; b.y+=b.vy*dt;
+      if(b.x<b.r){ b.x=b.r; b.vx=Math.abs(b.vx); beep(400,.03,.05); }
+      if(b.x>this.W-b.r){ b.x=this.W-b.r; b.vx=-Math.abs(b.vx); beep(400,.03,.05); }
+      if(b.vy>0 && b.y+b.r>=this.me.y-this.me.h/2 && b.y<this.me.y+20 &&
+         Math.abs(b.x-this.me.x)<=this.me.w/2+b.r){
+        this.hit(this.me,-1);
+      }
+      if(b.vy<0 && b.y-b.r<=this.ai.y+this.ai.h/2 && b.y>this.ai.y-20 &&
+         Math.abs(b.x-this.ai.x)<=this.ai.w/2+b.r){
+        this.hit(this.ai,1);
+      }
+      if(b.y>this.H+30) this.point("ai");
+      if(b.y<-30) this.point("me");
+    }
+    this.draw();
+  },
+  hit(paddle,dir){
+    const b=this.ball;
+    this.rally++;
+    b.speed=Math.min(b.speed*1.055,980);
+    const off=(b.x-paddle.x)/(paddle.w/2);
+    const ang=off*0.9;
+    b.vx=Math.sin(ang)*b.speed;
+    b.vy=dir*Math.abs(Math.cos(ang))*b.speed;
+    b.y=paddle.y+dir*(paddle.h/2+b.r+2);
+    beep(700+this.rally*12,.05);
+  },
+  draw(){
+    const c=this.ctx,W=this.W,H=this.H;
+    c.clearRect(0,0,W,H);
+    c.fillStyle="#0B3F79"; c.fillRect(0,0,W,H);
+    c.strokeStyle="rgba(244,248,252,.9)"; c.lineWidth=3;
+    c.strokeRect(4,4,W-8,H-8);
+    c.setLineDash([10,10]);
+    c.beginPath(); c.moveTo(6,H/2); c.lineTo(W-6,H/2); c.stroke();
+    c.setLineDash([]);
+    c.font='34px "Jua",sans-serif'; c.fillStyle="rgba(244,248,252,.28)";
+    c.textAlign="left";
+    c.fillText(String(this.sc.ai),16,H/2-18);
+    c.fillText(String(this.sc.me),16,H/2+46);
+    c.font='14px sans-serif'; c.fillStyle="#FFC489"; c.textAlign="right";
+    const st=this.deuce()?"듀스! 1점씩 서브":"";
+    c.fillText((this.server==="me"?"● 내 서브":"● AI 서브")+(st?" · "+st:""),W-14,this.server==="me"?H/2+42:H/2-22);
+    const rr=(x,y,w,h,col)=>{ c.fillStyle=col; c.beginPath(); c.roundRect(x-w/2,y-h/2,w,h,7); c.fill(); };
+    rr(this.ai.x,this.ai.y,this.ai.w,this.ai.h,"#E23B3B");
+    rr(this.me.x,this.me.y,this.me.w,this.me.h,"#FF8A1E");
+    if(this.state==="play"){
+      const b=this.ball;
+      const g=c.createRadialGradient(b.x-3,b.y-3,2,b.x,b.y,b.r);
+      g.addColorStop(0,"#FFE3C2"); g.addColorStop(1,"#FF8A1E");
+      c.fillStyle=g; c.beginPath(); c.arc(b.x,b.y,b.r,0,Math.PI*2); c.fill();
+    }
+    if(this.state==="serve"){
+      c.fillStyle="rgba(8,24,46,.7)"; c.fillRect(0,H/2-46,W,92);
+      c.fillStyle="#F4F8FC"; c.textAlign="center"; c.font='22px "Jua",sans-serif';
+      c.fillText(this.server==="me"?"탭 또는 스페이스로 서브!":"AI 서브 준비 중…",W/2,H/2-4);
+      c.font='13px sans-serif'; c.fillStyle="rgba(244,248,252,.7)";
+      c.fillText("11점 선취 · 10:10이면 듀스!",W/2,H/2+24);
+    }
+    $("#p-stat").textContent=`나 ${this.sc.me} : ${this.sc.ai} AI`;
+  }
+};
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){ this.rect(x,y,w,h); return this; };
+}
+const CARD_SET=[
+  {k:"racket",em:"🏓",tx:"라켓"},{k:"ball",em:"🟠",tx:"탁구공"},
+  {k:"smash",em:"🔥",tx:"스매시"},{k:"drive",em:"🌀",tx:"드라이브"},
+  {k:"cut",em:"✂️",tx:"커트"},{k:"block",em:"🛡️",tx:"블록"},
+  {k:"serve",em:"⚡",tx:"서브"},{k:"win",em:"🏆",tx:"우승"}
+];
+const Card={
+  first:null, lock:false, matched:0, tries:0, sec:0, tm:0, started:false,
+  start(){
+    this.first=null; this.lock=false; this.matched=0; this.tries=0; this.sec=0; this.started=false;
+    this.stopTimer();
+    $("#c-result").hidden=true; $("#c-play").hidden=false;
+    const deck=shuffle([...CARD_SET,...CARD_SET]);
+    $("#c-grid").innerHTML=deck.map((c,i)=>`
+      <button class="cardc" data-k="${c.k}" data-i="${i}" aria-label="카드">
+        <span class="in">
+          <span class="f">🏓</span>
+          <span class="b"><span class="em">${c.em}</span><span class="tx">${esc(c.tx)}</span></span>
+        </span>
+      </button>`).join("");
+    $$("#c-grid .cardc").forEach(el=>el.addEventListener("click",()=>this.flip(el)));
+    this.stat();
+  },
+  stat(){ $("#c-stat").textContent=`${this.tries}회 · ${this.sec}초`; },
+  startTimer(){
+    if(this.started) return; this.started=true;
+    this.tm=setInterval(()=>{ this.sec++; this.stat(); },1000);
+  },
+  stopTimer(){ clearInterval(this.tm); this.tm=0; },
+  flip(el){
+    if(this.lock||el.classList.contains("flip")) return;
+    this.startTimer();
+    el.classList.add("flip"); beep(600,.04);
+    if(!this.first){ this.first=el; return; }
+    this.tries++; this.stat();
+    const a=this.first; this.first=null;
+    if(a.dataset.k===el.dataset.k){
+      a.classList.add("done"); el.classList.add("done");
+      this.matched++; beep(920,.1);
+      if(this.matched===CARD_SET.length) this.finish();
+    }else{
+      this.lock=true;
+      setTimeout(()=>{ a.classList.remove("flip"); el.classList.remove("flip"); this.lock=false; },700);
+    }
+  },
+  finish(){
+    this.stopTimer();
+    const over=Math.max(0,this.tries-CARD_SET.length);
+    const score=Math.max(100, 1000 - over*25 - this.sec*4);
+    $("#c-play").hidden=true; $("#c-result").hidden=false;
+    $("#c-final").textContent=score+"점";
+    $("#c-final-sub").textContent=`시도 ${this.tries}회 · ${this.sec}초 (완벽 플레이는 8회!)`;
+    submitScore("card",score,$("#c-status"));
+  }
+};
+const WORDS=[
+  {w:"복컴",h:"세종 사람들이 즐탁하는 동네 '복합커뮤니티센터'의 줄임말!"},
+  {w:"스매시",h:"높이 뜬 공을 위에서 강하게 내리치는 결정타!"},
+  {w:"드라이브",h:"공에 강한 상회전(톱스핀)을 걸며 공격하는 기술."},
+  {w:"백핸드",h:"라켓 등 쪽(손등 방향)으로 치는 타법."},
+  {w:"포핸드",h:"손바닥 방향으로 치는 가장 기본이 되는 타법."},
+  {w:"리시브",h:"상대의 서브를 받아넘기는 것."},
+  {w:"듀스",h:"10:10 동점! 이제 2점 차이가 날 때까지 승부."},
+  {w:"펜홀더",h:"펜을 쥐듯 라켓을 잡는 그립."},
+  {w:"백스핀",h:"커트할 때 걸리는 회전 — 공이 뒤로 도는 하회전."},
+  {w:"셰이크핸드",h:"악수하듯 라켓을 잡는 그립. 요즘 대세!"}
+];
+const Word={
+  order:[], idx:0, score:0, picks:[], hintUsed:false, busy:false,
+  start(){
+    this.order=shuffle(WORDS); this.idx=0; this.score=0;
+    $("#w-result").hidden=true; $("#w-play").hidden=false;
+    this.round();
+  },
+  cur(){ return this.order[this.idx]; },
+  round(){
+    this.picks=[]; this.hintUsed=false; this.busy=false;
+    const item=this.cur();
+    const chars=item.w.split("");
+    let mix=shuffle(chars);
+    if(mix.join("")===item.w){
+      if(mix.length>=2){ [mix[0],mix[1]]=[mix[1],mix[0]]; }
+    }
+    $("#w-hint").textContent="💡 "+item.h;
+    $("#w-slots").className="w-slots";
+    $("#w-slots").innerHTML=chars.map(()=>'<span class="w-slot"></span>').join("");
+    $("#w-tiles").innerHTML=mix.map((c,i)=>`<button class="w-tile" data-c="${esc(c)}" data-i="${i}">${esc(c)}</button>`).join("");
+    $$("#w-tiles .w-tile").forEach(b=>b.addEventListener("click",()=>this.pick(b)));
+    this.stat();
+  },
+  stat(){ $("#w-stat").textContent=`${this.idx+1}/${this.order.length} · ${this.score}점`; },
+  renderSlots(){
+    const slots=$$("#w-slots .w-slot");
+    slots.forEach((s,i)=>{
+      s.textContent=this.picks[i]?this.picks[i].c:"";
+      s.classList.toggle("fill",!!this.picks[i]);
+    });
+  },
+  pick(btn){
+    if(this.busy||btn.disabled) return;
+    btn.disabled=true; beep(650,.04);
+    this.picks.push({c:btn.dataset.c,btn});
+    this.renderSlots();
+    if(this.picks.length===this.cur().w.length) this.check();
+  },
+  check(){
+    const guess=this.picks.map(p=>p.c).join("");
+    if(guess===this.cur().w){
+      this.busy=true;
+      $("#w-slots").classList.add("good"); beep(950,.12);
+      this.score+=this.hintUsed?60:100; this.stat();
+      setTimeout(()=>this.next(),650);
+    }else{
+      this.busy=true;
+      $("#w-slots").classList.add("bad"); beep(190,.15);
+      setTimeout(()=>{
+        $("#w-slots").classList.remove("bad");
+        this.picks.forEach(p=>p.btn.disabled=false);
+        this.picks=[]; this.renderSlots(); this.busy=false;
+      },420);
+    }
+  },
+  hint(){
+    if(this.busy) return;
+    const need=this.cur().w[this.picks.length];
+    if(need==null) return;
+    const tile=$$("#w-tiles .w-tile").find(b=>!b.disabled&&b.dataset.c===need);
+    if(tile){ this.hintUsed=true; this.pick(tile); toast("힌트 사용! 이번 단어는 60점이에요"); }
+  },
+  undo(){
+    if(this.busy||!this.picks.length) return;
+    const p=this.picks.pop(); p.btn.disabled=false; this.renderSlots();
+  },
+  next(){
+    if(this.idx===this.order.length-1){ this.finish(); return; }
+    this.idx++; this.round();
+  },
+  finish(){
+    $("#w-play").hidden=true; $("#w-result").hidden=false;
+    $("#w-final").textContent=this.score+"점";
+    $("#w-final-sub").textContent=
+      this.score>=900?"용어 마스터! 해설위원 하셔도 됩니다 🎙️":
+      this.score>=600?"수준급 어휘력! 즐탁 인증 😄":"괜찮아요, 힌트 보며 익히면 돼요 🌱";
+    submitScore("word",this.score,$("#w-status"));
+  }
+};
+$("#w-undo").addEventListener("click",()=>Word.undo());
+$("#w-hintbtn").addEventListener("click",()=>Word.hint());
+$("#w-pass").addEventListener("click",()=>{ if(!Word.busy){ toast("통과! 다음 단어로 갑니다"); Word.next(); } });
+const Rank={
+  cache:null, cacheAt:0, cur:"quiz",
+  clearCache(){ this.cache=null; },
+  open(game){
+    this.cur=game||"quiz";
+    $("#rank-modal").classList.add("open");
+    this.tabs(); this.load();
+  },
+  close(){ $("#rank-modal").classList.remove("open"); },
+  tabs(){
+    $("#rank-tabs").innerHTML=Object.keys(GAMES).map(k=>
+      `<button class="m-tab ${k===this.cur?"on":""}" data-k="${k}">${GAMES[k]}</button>`).join("");
+    $$("#rank-tabs .m-tab").forEach(b=>b.addEventListener("click",()=>{ this.cur=b.dataset.k; this.tabs(); this.render(); }));
+  },
+  async load(){
+    if(!API_URL){
+      $("#rank-body").innerHTML=`<p class="m-note">서버 URL이 비어 있어요.</p>`;
+      return;
+    }
+    if(this.cache && Date.now()-this.cacheAt<60000){ this.render(); return; }
+    $("#rank-body").innerHTML='<p class="m-note">랭킹 불러오는 중…</p>';
+    try{
+      const res=await fetch(API_URL+"?action=gameRank&limit=10");
+      const d=await res.json();
+      if(!d.ok) throw new Error(d.error||"오류");
+      this.cache=d.games||{}; this.cacheAt=Date.now();
+      this.render();
+    }catch(err){
+      $("#rank-body").innerHTML='<p class="m-note">랭킹을 못 불러왔어요 😢<br>GAS에 <b>gameRank</b> 액션이 배포됐는지 확인해 주세요.<br>(v1.4.0 이상 필요)</p>';
+    }
+  },
+  render(){
+    if(!this.cache) return;
+    const g=this.cache[this.cur];
+    const list=(g&&g.rank)||[];
+    if(!list.length){
+      $("#rank-body").innerHTML='<p class="m-note">아직 기록이 없어요. 1등의 주인공이 되어보세요! 🥇</p>';
+      return;
+    }
+    const my=nick();
+    const medal=["🥇","🥈","🥉"];
+    $("#rank-body").innerHTML='<ul class="r-list">'+list.map((r,i)=>`
+      <li class="${my&&r.n===my?"me":""}">
+        <span class="rk">${medal[i]||(i+1)+"위"}</span>
+        <span class="nm">${esc(r.n)}</span>
+        <span class="tm">${esc(r.t||"")}</span>
+        <span class="sc">${Number(r.score)||0}점</span>
+      </li>`).join("")+'</ul>';
+  }
+};
+$("#rank-close").addEventListener("click",()=>Rank.close());
+$("#rank-modal").addEventListener("click",e=>{ if(e.target.id==="rank-modal") Rank.close(); });
+</script>
+</body>
+</html>
