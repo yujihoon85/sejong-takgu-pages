@@ -562,6 +562,146 @@ a[href="game.html"],a[href="/game/"],a[href*="game"]{
   .hero{padding:40px 36px 32px}
   .hero h2{font-size:3rem}
 }
+
+/* ═══════════════════════════════════════════════════
+   Mobile-first responsive polish
+   ═══════════════════════════════════════════════════ */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  padding-top:env(safe-area-inset-top,0px);
+  padding-left:env(safe-area-inset-left,0px);
+  padding-right:env(safe-area-inset-right,0px);
+}
+/* prevent iOS input zoom */
+input,textarea,select{font-size:16px!important}
+.topbar{
+  padding-top:calc(10px + env(safe-area-inset-top,0px));
+  padding-left:calc(14px + env(safe-area-inset-left,0px));
+  padding-right:calc(14px + env(safe-area-inset-right,0px));
+}
+.top-actions .btn{min-height:40px}
+
+/* Hero CTAs */
+.hero-cta{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;
+}
+.hero-cta .btn{flex:1 1 auto;min-width:calc(50% - 6px)}
+@media(max-width:420px){
+  .hero-cta .btn{min-width:100%}
+  .hero{
+    margin:10px 10px 12px;
+    padding:22px 16px 18px;
+    border-radius:20px;
+  }
+  .hero h2{font-size:clamp(1.65rem,8.2vw,2.1rem);max-width:none}
+  .hero-lead{font-size:13.5px;max-width:none}
+  .hero-stats{gap:8px;margin-top:18px}
+  .hero-stats .stat{padding:12px 6px;border-radius:12px}
+  .hero-stats .n{font-size:1.45rem}
+  .hero-stats .l{font-size:10px}
+  .arena-badge,.hero-kicker{font-size:10px;padding:5px 10px;margin-bottom:10px}
+}
+@media(max-width:360px){
+  .hero-stats{grid-template-columns:repeat(3,1fr);gap:6px}
+  .hero-stats .n{font-size:1.25rem}
+  .brand h1{font-size:13px;max-width:42vw}
+  .brand .mark{width:36px;height:36px;border-radius:10px}
+}
+
+/* Content gutters */
+@media(max-width:480px){
+  .arena-zones{padding:0 10px 12px;gap:8px}
+  .arena-zone{padding:14px 12px;border-radius:14px}
+  .arena-zone b{font-size:13px}
+  .arena-zone small{font-size:11.5px}
+  .panel{margin:0 10px 12px;padding:14px;border-radius:16px}
+  .panel-hd{margin-bottom:12px;gap:8px;flex-wrap:wrap}
+  .panel-hd h3{font-size:15.5px}
+  .filters{padding:0 10px}
+  .grid-2{padding:0}
+  .play-grid,.arcade-cabinets{padding:0 10px 12px;gap:8px}
+  .play-stage{margin:0 10px 12px}
+  .hi{padding:0 10px 8px}
+}
+
+/* Room grid denser on phone */
+@media(max-width:400px){
+  .room-grid{gap:8px}
+  .room{padding:12px 8px 10px}
+  .room .count{font-size:1.55rem}
+  .room .name{font-size:12px}
+  .gear-grid,.book-shelf{gap:8px}
+  .gear-tabs{gap:5px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .gear-tabs button{flex:0 0 auto;white-space:nowrap}
+}
+
+/* Map / video */
+@media(max-width:480px){
+  #homeMap{height:200px}
+  #map{height:min(48vh,340px)}
+  .video-wrap{border-radius:12px}
+  .yt-item img{width:88px;height:50px}
+  .sister-link{padding:12px;border-radius:14px}
+  .sister-link .ico{width:40px;height:40px;border-radius:12px}
+}
+
+/* Dock: 6 tabs readable + safe area */
+.dock{
+  padding-left:calc(8px + env(safe-area-inset-left,0px));
+  padding-right:calc(8px + env(safe-area-inset-right,0px));
+  padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
+}
+.dock-inner{padding:6px;border-radius:20px;gap:0}
+.dock button{
+  min-height:52px;min-width:0;padding:6px 1px;
+  font-size:10px;letter-spacing:-.02em;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.dock button svg{width:19px;height:19px}
+@media(max-width:360px){
+  .dock button{font-size:9px;min-height:50px}
+  .dock button svg{width:18px;height:18px}
+}
+
+/* Floating game CTA — avoid dock overlap */
+.fab-game{
+  position:fixed!important;
+  right:calc(12px + env(safe-area-inset-right,0px))!important;
+  bottom:calc(78px + env(safe-area-inset-bottom,0px))!important;
+  z-index:40!important;
+  min-height:44px!important;
+  padding:11px 15px!important;
+  font-size:13px!important;
+  border-radius:999px!important;
+  box-shadow:0 10px 28px rgba(21,101,192,.35)!important;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+@media(max-width:380px){
+  .fab-game{font-size:12px!important;padding:10px 13px!important;right:10px!important}
+}
+
+/* Touch feedback */
+.btn,.arena-zone,.room,.item,.sister-link,.dock button,.filter,.gear-tabs button{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+
+/* Landscape phone */
+@media(max-height:430px) and (orientation:landscape){
+  .hero{padding:16px 18px;margin:8px}
+  .hero h2{font-size:1.5rem;margin-bottom:6px}
+  .hero-stats{display:none}
+  .dock button{min-height:46px}
+  body{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
+}
+
+/* Tablet+ already covered; ensure no horizontal scroll */
+.app,main,.view,.panel,.hero{max-width:100%}
+img,video,canvas,iframe,svg{max-width:100%}
+table{display:block;max-width:100%;overflow-x:auto}
+
 </style>
 </head>
 <body>
@@ -592,7 +732,7 @@ a[href="game.html"],a[href="/game/"],a[href*="game"]{
         <div class="hero-kicker"><i></i> 세종시 생활 체육</div>
         <h2>이웃과 함께하는<br><em>세종 탁구</em></h2>
         <p class="hero-lead">동별 인원 · 코트 지도 · 벙개 · 배움터 · 게임. 카톡방에서 모이고, 여기서 일정을 확인하세요.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
+                <div class="hero-cta">
           <button type="button" class="btn btn-accent" data-go="play">연습 머신 · 게임</button>
           <a class="btn btn-ghost" href="/game/">게임센터</a>
           <button type="button" class="btn btn-ghost" data-go="map">코트 지도</button>
@@ -1220,11 +1360,7 @@ a[href="game.html"],a[href="/game/"],a[href*="game"]{
 <script src="./games.js?v=6"></script>
 <script src="./app.js?v=5"></script>
 
-<a href="/game/" style="position:fixed;right:14px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:40;
-  background:#1565c0;color:#fff;font-weight:800;font-size:13px;
-  padding:12px 16px;border-radius:999px;text-decoration:none;
-  box-shadow:0 10px 28px rgba(21,101,192,.35);
-  font-family:inherit">게임센터</a>
+<a href="/game/" class="fab-game" style="position:fixed;right:14px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:40;background:#1565c0;color:#fff;font-weight:800;font-size:13px;padding:12px 16px;border-radius:999px;text-decoration:none;box-shadow:0 10px 28px rgba(21,101,192,.35);font-family:inherit">게임센터</a>
 
 </body>
 </html>
