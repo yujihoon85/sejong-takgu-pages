@@ -1086,92 +1086,15 @@
   }
 
   function initCourtEnter() {
+    /* 3D 랠리 입장 화면 제거 — 바로 홈 */
     var overlay = $("courtEnter");
-    var btn = $("btnEnterCourt");
-    var skip = $("btnSkipEnter");
-    var canvas = $("ceCanvas");
-    if (!overlay) return;
-
-    var greets = [
-      { t: "안녕하세요!", s: "오늘도 즐탁 한 판 하실래요?" },
-      { t: "어서 오세요!", s: "3D 코트에 오신 걸 환영합니다" },
-      { t: "반갑습니다!", s: "세종 탁구 이웃들이 기다리고 있어요" },
-      { t: "하이, 탁구인!", s: "라켓 챙기셨나요? 한 세트 가시죠" },
-      { t: "좋은 하루예요!", s: "조탁·벙개·랠리, 오늘도 즐탁!" }
-    ];
-    var hour = new Date().getHours();
-    if (hour < 10) greets.unshift({ t: "좋은 아침이에요!", s: "새벽 조탁 가시는 분 손!" });
-    else if (hour >= 18) greets.unshift({ t: "수고 많으셨어요!", s: "퇴근 후 한 판, 머리가 맑아져요" });
-
-    var g = greets[Math.floor(Math.random() * greets.length)];
-    var title = $("ceGreetTitle");
-    var sub = $("ceGreetSub");
-    if (title) {
-      var raw = g.t;
-      var em = raw.replace(/!$/, "");
-      title.innerHTML = "<em>" + esc(em) + "</em>" + (raw.slice(-1) === "!" ? "!" : "");
+    if (overlay && overlay.parentNode) {
+      try { overlay.parentNode.removeChild(overlay); } catch (e) {}
     }
-    if (sub) sub.textContent = g.s;
-
-    var seen = false;
-    try { seen = false; sessionStorage.removeItem("pp_court_enter_v3"); } catch (e) {}
-
-    var enter3d = null;
-    function start3d() {
-      if (!canvas || !window.SejongEnter3D || !window.THREE) {
-        overlay.classList.add("fallback-on");
-        var fb = $("ceFallback");
-        if (fb) fb.hidden = false;
-        return;
-      }
-      try {
-        enter3d = window.SejongEnter3D.init(canvas, {});
-        if (!enter3d) {
-          overlay.classList.add("fallback-on");
-          var fb2 = $("ceFallback");
-          if (fb2) fb2.hidden = false;
-        }
-      } catch (err) {
-        console.warn("enter3d fail", err);
-        overlay.classList.add("fallback-on");
-      }
-    }
-
-    function dismiss() {
-      if (!overlay || overlay.classList.contains("hide")) return;
-      overlay.classList.add("hide");
-      try { sessionStorage.setItem("pp_court_enter_v3", "1"); } catch (e2) {}
-      try { if (window.SejongEnter3D) window.SejongEnter3D.dispose(); } catch (e3) {}
-      setTimeout(function () {
-        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-      }, 700);
-    }
-
-    if (seen) {
-      overlay.classList.add("hide");
-      overlay.style.display = "none";
-      return;
-    }
-
-    // boot 3D after layout
-    setTimeout(start3d, 40);
-
-    if (btn) btn.addEventListener("click", dismiss);
-    if (skip) skip.addEventListener("click", dismiss);
-    document.addEventListener("keydown", function onKey(e) {
-      if (e.key === "Escape" || e.key === "Enter") {
-        dismiss();
-        document.removeEventListener("keydown", onKey);
-      }
-    });
-    setTimeout(function () {
-      if (btn && !overlay.classList.contains("hide")) {
-        btn.style.transform = "scale(1.04)";
-        setTimeout(function () { if (btn) btn.style.transform = ""; }, 400);
-      }
-    }, 2400);
+    try {
+      if (window.SejongEnter3D && window.SejongEnter3D.dispose) window.SejongEnter3D.dispose();
+    } catch (e2) {}
   }
-
 
   // boot
   try { initBgmUi(); } catch (e) {}
