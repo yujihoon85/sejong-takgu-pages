@@ -1149,6 +1149,16 @@
 
   // boot
   try { initBgmUi(); } catch (e) {}
+  try {
+    var topbar = document.querySelector(".topbar");
+    if (topbar) {
+      var onScroll = function () {
+        topbar.classList.toggle("is-scrolled", window.scrollY > 8);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    }
+  } catch (eTop) {}
   loadLivingGraph().then(function () {
     wireSisterLinks();
     wireYouTubePractice();
