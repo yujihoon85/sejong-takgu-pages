@@ -90,6 +90,14 @@ body::after{
   mask-image:linear-gradient(180deg,#000 0%, transparent 80%);
 }
 .app{position:relative;z-index:1;max-width:720px;margin:0 auto}
+@media(min-width:900px){
+  .app{max-width:960px}
+  .hero{padding:36px 32px 28px}
+  .hero h2{font-size:3.6rem}
+  .arena-zones{grid-template-columns:repeat(4,1fr)}
+  .grid-2{grid-template-columns:1fr 1fr;padding:0 14px;gap:14px}
+  .grid-2 > .panel{margin-left:0;margin-right:0}
+}
 button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:none;background:none}
 button:not(:disabled),[role="button"]:not(:disabled){cursor:pointer}
@@ -526,24 +534,41 @@ main{padding-bottom:8px}
 #gate input:focus{border-color:rgba(0,232,255,.5)}
 #gate .actions{display:flex;gap:8px;margin-top:8px}
 
-/* ── Court enter overlay ── */
+
+/* court enter — poster splash */
 .court-enter{
   position:fixed;inset:0;z-index:80;
   display:grid;place-items:end center;
-  background:radial-gradient(circle at 50% 30%, rgba(0,232,255,.12), transparent 50%), rgba(3,6,12,.88);
+  background:
+    radial-gradient(600px 400px at 50% 20%, rgba(255,75,31,.22), transparent 55%),
+    radial-gradient(500px 360px at 20% 80%, rgba(0,232,255,.12), transparent 50%),
+    #03060c;
 }
-.court-enter.hide{display:none}
-.ce-canvas{position:absolute;inset:0;width:100%;height:100%}
+.court-enter.hide{display:none!important}
+.ce-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.85}
 .ce-card{
-  position:relative;z-index:2;width:min(420px,92vw);margin-bottom:12vh;
-  padding:22px;border-radius:22px;
-  background:rgba(13,20,34,.92);border:1px solid var(--line-2);
-  text-align:center;box-shadow:var(--shadow);
+  position:relative;z-index:2;width:min(420px,92vw);margin-bottom:max(10vh,72px);
+  padding:26px 22px 20px;border-radius:24px;text-align:center;
+  background:rgba(10,14,24,.92);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 30px 80px rgba(0,0,0,.55);
+  backdrop-filter:blur(12px);
 }
-.ce-card h2{font-family:var(--display);font-size:2.4rem;letter-spacing:.03em}
-.ce-card h2 em{font-style:normal;color:var(--orange)}
-.ce-card .line2{display:block;color:var(--muted);margin:6px 0 16px;font-size:14px}
-.ce-skip{display:block;width:100%;margin-top:10px;color:var(--subtle);font-size:13px;min-height:40px}
+.ce-card h2{
+  font-family:var(--display);font-size:clamp(2.6rem,12vw,3.4rem);
+  letter-spacing:.04em;line-height:.95;font-weight:400;
+}
+.ce-card h2 em{
+  font-style:normal;
+  background:linear-gradient(90deg,var(--orange),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.ce-card .line2{display:block;color:var(--muted);margin:10px 0 18px;font-size:14px}
+.ce-cta{width:100%;min-height:50px;font-size:15px}
+.ce-skip{
+  display:block;width:100%;margin-top:10px;min-height:44px;
+  color:var(--subtle);font-size:13px;font-weight:600;
+}
 .ce-fallback{padding:40px 20px;text-align:center;color:var(--muted)}
 
 /* ── Bottom dock ── */
@@ -630,12 +655,12 @@ main{padding-bottom:8px}
   <div class="ce-hud">
     <div class="ce-badge">SEJONG COURT · ONLINE</div>
     <div class="ce-hello">
-      <h2 id="ceGreetTitle"><em>안녕하세요</em>!</h2>
-      <span class="line2" id="ceGreetSub">오늘도 즐탁 한 판 하실래요?</span>
+      <h2 id="ceGreetTitle"><em>안녕하세요</em></h2>
+      <span class="line2" id="ceGreetSub">SEJONG OPEN · 오늘도 한 판 하실래요?</span>
     </div>
     <p class="ce-sub">세종시 어쩌다 운동하는 사람들 · 탁구 시합장</p>
     <div class="ce-actions">
-      <button type="button" class="btn btn-accent ce-cta" id="btnEnterCourt">인사 받고 입장</button>
+      <button type="button" class="btn btn-accent ce-cta" id="btnEnterCourt">코트 입장</button>
       <button type="button" class="ce-skip" id="btnSkipEnter">건너뛰기</button>
     </div>
     <p class="ce-tech">WebGL · Three.js 실시간 렌더</p>
