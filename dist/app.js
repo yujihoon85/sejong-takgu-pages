@@ -1136,6 +1136,75 @@
     });
   }
 
+
+  function initPosterMap() {
+    var root = document.getElementById("posterMap");
+    if (!root || root._bound) return;
+    root._bound = true;
+
+    function flash(el) {
+      if (!el) return;
+      el.classList.add("is-flash");
+      setTimeout(function () { el.classList.remove("is-flash"); }, 280);
+    }
+
+    function activate(el) {
+      if (!el) return;
+      flash(el);
+      var goTo = el.getAttribute("data-go");
+      var scroll = el.getAttribute("data-scroll");
+      var href = el.getAttribute("data-href");
+      var ext = el.getAttribute("data-ext");
+      if (goTo) {
+        go(goTo);
+        return;
+      }
+      if (scroll) {
+        var target = document.getElementById(scroll);
+        if (target) {
+          var homeBtn = document.querySelector('.dock button[data-go="home"]');
+          function goScroll() {
+            if (typeof openAccordion === "function") openAccordion(target);
+            setTimeout(function () {
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 40);
+          }
+          if (homeBtn && !document.querySelector('.view[data-view="home"].on')) {
+            homeBtn.click();
+            setTimeout(goScroll, 80);
+          } else {
+            goScroll();
+          }
+        }
+        return;
+      }
+      if (href) {
+        if (ext) window.open(href, "_blank", "noopener");
+        else window.location.href = href;
+      }
+    }
+
+    root.querySelectorAll(".zone").forEach(function (zone) {
+      zone.addEventListener("click", function (e) {
+        e.preventDefault();
+        activate(zone);
+      });
+      zone.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          activate(zone);
+        }
+      });
+    });
+
+    // quick chips flash sync
+    document.querySelectorAll(".poster-quick .pq[data-go], .poster-quick .pq[data-scroll]").forEach(function (pq) {
+      pq.addEventListener("click", function () {
+        flash(pq);
+      });
+    });
+  }
+
   function initCourtEnter() {
     /* 3D 랠리 입장 화면 제거 — 바로 홈 */
     var overlay = $("courtEnter");
@@ -1163,7 +1232,7 @@
     wireSisterLinks();
     wireYouTubePractice();
     renderGuide();
-    try { renderGear("all"); wireGearTabs(); renderBooks(); initAccordions(); wireArenaScroll(); initCourtEnter(); } catch (eArena) {}
+    try { renderGear("all"); wireGearTabs(); renderBooks(); initAccordions(); wireArenaScroll(); initPosterMap(); initCourtEnter(); } catch (eArena) {}
     if (me()) afterJoin();
     else $("btnProfile").textContent = "입장";
     loadRooms();

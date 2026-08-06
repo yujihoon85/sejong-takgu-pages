@@ -864,140 +864,204 @@ table{display:block;max-width:100%;overflow-x:auto}
 
 
 
-/* ── Interactive poster hero ── */
-.poster-wrap{margin:10px 10px 14px}
+
+/* ── Interactive poster image-map (responsive) ── */
+.poster-wrap{
+  margin:10px 10px 14px;
+  --poster-r:20px;
+}
 .poster-stage{
   position:relative;
-  border-radius:20px;
+  border-radius:var(--poster-r);
   overflow:hidden;
   background:#0a2540;
-  box-shadow:0 16px 48px rgba(15,23,42,.18);
+  box-shadow:0 16px 48px rgba(15,23,42,.16);
   border:1px solid var(--line);
+  width:100%;
+  /* keep 16:9 map coordinates stable */
   aspect-ratio:16/9;
-  max-height:min(58vh,420px);
+  max-height:none;
+  touch-action:manipulation;
 }
 .poster-img{
+  position:absolute;inset:0;
   width:100%;height:100%;
-  object-fit:cover;object-position:center 40%;
+  object-fit:cover;
+  object-position:center 42%;
   display:block;
   user-select:none;-webkit-user-drag:none;
+  pointer-events:none; /* clicks go to map layer */
 }
 .poster-shade{
-  position:absolute;inset:0;pointer-events:none;
+  position:absolute;inset:0;pointer-events:none;z-index:1;
   background:
-    linear-gradient(180deg, rgba(3,20,40,.15) 0%, transparent 35%, rgba(3,12,28,.45) 100%);
+    linear-gradient(180deg, rgba(3,20,40,.12) 0%, transparent 40%, rgba(3,12,28,.5) 100%);
 }
-.poster-hotspots{position:absolute;inset:0;z-index:2}
-.hotspot{
-  position:absolute;
-  display:flex;align-items:center;gap:6px;
-  padding:6px 10px 6px 6px;
-  border-radius:999px;
-  background:rgba(255,255,255,.92);
-  border:1px solid rgba(255,255,255,.95);
-  box-shadow:0 6px 18px rgba(0,0,0,.22);
-  color:var(--ink);
-  font-size:11.5px;font-weight:800;
-  letter-spacing:-.02em;
-  white-space:nowrap;
-  transform:translate(-50%,-50%);
-  transition:transform .18s var(--ease), box-shadow .2s ease, background .2s;
+/* percentage map layer — always matches image box */
+.poster-map{
+  position:absolute;inset:0;z-index:2;
+  width:100%;height:100%;
+}
+.poster-map svg{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  display:block;
+}
+.poster-map .zone{
+  fill:rgba(21,101,192,0);
+  stroke:rgba(255,255,255,0);
+  stroke-width:0.3;
+  cursor:pointer;
+  transition:fill .2s ease, stroke .2s ease;
   -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
-  min-height:36px;
-  z-index:3;
-  text-decoration:none;
 }
-.hotspot:hover,.hotspot:focus-visible{
-  transform:translate(-50%,-50%) scale(1.06);
-  box-shadow:0 10px 28px rgba(21,101,192,.35);
-  background:#fff;
+.poster-map .zone:hover,
+.poster-map .zone:focus{
+  fill:rgba(21,101,192,.18);
+  stroke:rgba(255,255,255,.55);
   outline:none;
 }
-.hotspot:active{transform:translate(-50%,-50%) scale(.97)}
-.hs-dot{
-  width:12px;height:12px;border-radius:50%;flex-shrink:0;
+.poster-map .zone:active{
+  fill:rgba(255,75,31,.22);
+}
+.poster-map .zone.is-flash{
+  fill:rgba(21,101,192,.35);
+  stroke:rgba(255,255,255,.8);
+}
+
+/* floating labels (visual only, pointer-events none — zone receives click) */
+.poster-labels{
+  position:absolute;inset:0;z-index:3;pointer-events:none;
+}
+.hs-tag{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 9px 5px 5px;
+  border-radius:999px;
+  background:rgba(255,255,255,.94);
+  border:1px solid rgba(255,255,255,.98);
+  box-shadow:0 6px 16px rgba(0,0,0,.2);
+  font-size:11px;font-weight:800;color:var(--ink);
+  white-space:nowrap;
+  letter-spacing:-.02em;
+  max-width:42vw;
+  transition:transform .18s var(--ease), opacity .2s;
+}
+.hs-tag .d{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
   background:var(--blue);
-  box-shadow:0 0 0 4px rgba(21,101,192,.28);
+  box-shadow:0 0 0 3px rgba(21,101,192,.28);
   animation:hsPulse 1.8s ease infinite;
 }
 @keyframes hsPulse{
-  0%,100%{box-shadow:0 0 0 3px rgba(21,101,192,.25)}
+  0%,100%{box-shadow:0 0 0 3px rgba(21,101,192,.28)}
   50%{box-shadow:0 0 0 7px rgba(21,101,192,0)}
 }
-.hs-label{line-height:1}
-
-/* positions (image composition) */
-.hs-ai{left:72%;top:16%}
-.hs-city{left:82%;top:38%}
-.hs-park{left:22%;top:36%}
-.hs-people{left:38%;top:72%}
-.hs-play{left:62%;top:70%}
-.hs-lounge{left:50%;top:58%}
-.hs-learn{left:58%;top:22%}
-.hs-kakao{left:18%;top:70%}
-.hs-gamec{left:78%;top:72%}
+/* label positions = zone centers (percent) */
+.tag-ai{left:74%;top:15%}
+.tag-learn{left:58%;top:20%}
+.tag-city{left:84%;top:36%}
+.tag-park{left:20%;top:38%}
+.tag-lounge{left:50%;top:56%}
+.tag-people{left:36%;top:74%}
+.tag-play{left:64%;top:74%}
+.tag-kakao{left:16%;top:74%}
+.tag-gamec{left:82%;top:76%}
 
 .poster-stats{
-  position:absolute;left:10px;right:10px;bottom:10px;z-index:4;
+  position:absolute;left:8px;right:8px;bottom:8px;z-index:4;
   display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
   pointer-events:none;
 }
 .poster-stats .ps{
-  background:rgba(255,255,255,.9);
+  background:rgba(255,255,255,.92);
   backdrop-filter:blur(8px);
-  border-radius:12px;
-  padding:8px 6px;text-align:center;
-  border:1px solid rgba(255,255,255,.8);
+  border-radius:11px;
+  padding:7px 4px;text-align:center;
+  border:1px solid rgba(255,255,255,.85);
 }
 .poster-stats b{
   display:block;font-family:var(--display);
-  font-size:1.15rem;font-weight:700;color:var(--blue-deep);line-height:1;
+  font-size:clamp(1rem,4.2vw,1.2rem);font-weight:700;color:var(--blue-deep);line-height:1;
 }
 .poster-stats span{
-  display:block;margin-top:3px;font-size:10px;font-weight:700;color:var(--muted);
+  display:block;margin-top:2px;font-size:10px;font-weight:700;color:var(--muted);
 }
 
 .poster-hint{
-  margin:10px 4px 0;text-align:center;
-  font-size:12px;font-weight:600;color:var(--muted);
+  margin:10px 2px 0;text-align:center;
+  font-size:12px;font-weight:600;color:var(--muted);line-height:1.4;
 }
+.poster-hint b{color:var(--blue-deep)}
+
+/* quick chips — primary nav on mobile */
 .poster-quick{
-  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;
-  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-top:12px;
 }
 .poster-quick .pq{
-  min-height:36px;padding:0 12px;border-radius:999px;
-  font-size:12.5px;font-weight:800;
+  min-height:44px;padding:8px 6px;border-radius:14px;
+  font-size:12px;font-weight:800;text-align:center;
   background:var(--surface);border:1px solid var(--line);color:var(--ink-2);
   box-shadow:var(--shadow-sm);
-  transition:background .2s, border-color .2s, transform .15s, color .2s;
-  display:inline-flex;align-items:center;text-decoration:none;
+  transition:background .2s, border-color .2s, transform .15s, color .2s, box-shadow .2s;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;line-height:1.2;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
 }
-.poster-quick .pq:hover{border-color:var(--blue-mid);background:var(--blue-soft);color:var(--blue-deep)}
+.poster-quick .pq:hover{
+  border-color:var(--blue-mid);background:var(--blue-soft);color:var(--blue-deep);
+  box-shadow:var(--shadow);
+}
 .poster-quick .pq:active{transform:scale(.97)}
+.poster-quick .pq.is-flash{
+  background:var(--blue);color:#fff;border-color:var(--blue);
+}
 
-@media(max-width:400px){
-  .poster-stage{max-height:min(48vh,300px);border-radius:16px}
-  .hotspot{padding:5px 8px 5px 5px;font-size:10.5px;min-height:32px}
-  .hs-dot{width:10px;height:10px}
-  .hs-label{/* keep visible */}
-  .poster-stats .ps{padding:6px 4px}
-  .poster-stats b{font-size:1rem}
-  /* hide some hotspot labels on very small - keep dots+label short */
+/* mobile */
+@media(max-width:480px){
+  .poster-wrap{margin:8px 8px 12px;--poster-r:16px}
+  .poster-stage{
+    /* slightly taller crop on phone for faces */
+    aspect-ratio:4/3;
+  }
+  .poster-img{object-position:center 48%}
+  .hs-tag{font-size:10px;padding:4px 7px 4px 4px}
+  .hs-tag .d{width:8px;height:8px}
+  /* hide less critical labels on narrow; zones still clickable */
+  .tag-learn,.tag-gamec,.tag-lounge{opacity:0;visibility:hidden}
+  .poster-stats{left:6px;right:6px;bottom:6px;gap:4px}
+  .poster-quick{grid-template-columns:repeat(4,1fr);gap:6px}
+  .poster-quick .pq{min-height:42px;font-size:11.5px;border-radius:12px;padding:6px 4px}
 }
-@media(max-width:340px){
-  .hs-learn,.hs-gamec{display:none}
+@media(max-width:360px){
+  .poster-stage{aspect-ratio:1/1}
+  .tag-park,.tag-ai{font-size:9.5px}
+  .poster-quick{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
-@media(min-width:720px){
-  .poster-stage{max-height:min(62vh,480px)}
-  .hotspot{font-size:12.5px;padding:7px 12px 7px 7px}
+/* tablet+ */
+@media(min-width:640px){
+  .poster-wrap{margin:12px 14px 16px;--poster-r:22px}
+  .poster-stage{aspect-ratio:16/9;max-height:min(56vh,520px);margin-inline:auto}
+  .hs-tag{font-size:12.5px;padding:6px 11px 6px 6px}
+  .poster-quick{grid-template-columns:repeat(8,1fr);gap:8px}
+  .poster-quick .pq{min-height:40px;font-size:12.5px}
+  .tag-learn,.tag-gamec,.tag-lounge{opacity:1;visibility:visible}
+}
+@media(min-width:960px){
+  .poster-stage{max-height:min(58vh,560px)}
+  .poster-map .zone:hover{fill:rgba(21,101,192,.22)}
 }
 @media (prefers-reduced-motion:reduce){
-  .hs-dot{animation:none}
+  .hs-tag .d{animation:none}
+  .poster-map .zone,.poster-quick .pq,.hs-tag{transition:none}
 }
 
-/* hide old hero if any remnant */
+/* legacy hotspot classes (if any remain) */
+.hotspot{display:none!important}
 .hero{display:none!important}
 .arena-zones{display:none!important}
 
@@ -1027,58 +1091,67 @@ table{display:block;max-width:100%;overflow-x:auto}
     <!-- HOME -->
     <section class="view on" data-view="home">
 
-      <!-- Interactive poster home -->
+
+      <!-- Responsive image-map poster -->
       <div class="poster-wrap" id="posterWrap">
-        <div class="poster-stage" role="img" aria-label="세종 스마트 탁구 플랫폼 인터랙티브 포스터">
+        <div class="poster-stage" id="posterStage">
           <img
             class="poster-img"
+            id="posterImg"
             src="./media/sejong-smart-hero.jpg"
             alt="세종 스마트 탁구 플랫폼 — AI로 연결되는 스마트 플레이"
             width="1280"
             height="720"
             decoding="async"
             fetchpriority="high"
+            draggable="false"
           />
           <div class="poster-shade" aria-hidden="true"></div>
 
-          <!-- Clickable hotspots → menu tabs -->
-          <div class="poster-hotspots">
-            <button type="button" class="hotspot hs-ai" data-go="pulse" title="AI 소식·주간 인사이트">
-              <span class="hs-dot"></span>
-              <span class="hs-label">AI 소식</span>
-            </button>
-            <button type="button" class="hotspot hs-city" data-go="map" title="코트·클럽 지도">
-              <span class="hs-dot"></span>
-              <span class="hs-label">지도·코트</span>
-            </button>
-            <button type="button" class="hotspot hs-park" data-go="guide" title="코트 가이드">
-              <span class="hs-dot"></span>
-              <span class="hs-label">코트 가이드</span>
-            </button>
-            <button type="button" class="hotspot hs-people" data-scroll="zone-bench" title="동별 인원">
-              <span class="hs-dot"></span>
-              <span class="hs-label">동별 인원</span>
-            </button>
-            <button type="button" class="hotspot hs-play" data-go="play" title="탁구 게임">
-              <span class="hs-dot"></span>
-              <span class="hs-label">게임</span>
-            </button>
-            <button type="button" class="hotspot hs-lounge" data-go="lounge" title="라운지">
-              <span class="hs-dot"></span>
-              <span class="hs-label">라운지</span>
-            </button>
-            <button type="button" class="hotspot hs-learn" data-go="learn" title="배움터">
-              <span class="hs-dot"></span>
-              <span class="hs-label">배움터</span>
-            </button>
-            <a class="hotspot hs-kakao" href="https://open.kakao.com/o/g51E976e" target="_blank" rel="noopener" title="카톡방 입장">
-              <span class="hs-dot"></span>
-              <span class="hs-label">카톡방</span>
-            </a>
-            <a class="hotspot hs-gamec" href="/game/" title="게임센터">
-              <span class="hs-dot"></span>
-              <span class="hs-label">게임센터</span>
-            </a>
+          <!-- SVG image map: viewBox 0–100 keeps zones responsive -->
+          <div class="poster-map" id="posterMap" aria-label="포스터 메뉴 영역">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="group">
+              <!-- AI panel (top-right HUD) -->
+              <rect class="zone" data-go="pulse" x="58" y="6" width="36" height="20" rx="2"
+                tabindex="0" role="button" aria-label="AI 소식"></rect>
+              <!-- Learn / coaching -->
+              <rect class="zone" data-go="learn" x="48" y="14" width="18" height="14" rx="2"
+                tabindex="0" role="button" aria-label="배움터"></rect>
+              <!-- City / towers → map -->
+              <rect class="zone" data-go="map" x="68" y="24" width="30" height="32" rx="2"
+                tabindex="0" role="button" aria-label="지도 코트"></rect>
+              <!-- Lake / park left → guide -->
+              <rect class="zone" data-go="guide" x="4" y="28" width="32" height="28" rx="2"
+                tabindex="0" role="button" aria-label="코트 가이드"></rect>
+              <!-- Center buildings / group upper → lounge -->
+              <rect class="zone" data-go="lounge" x="34" y="46" width="32" height="16" rx="2"
+                tabindex="0" role="button" aria-label="라운지"></rect>
+              <!-- People left → rooms -->
+              <rect class="zone" data-scroll="zone-bench" x="8" y="62" width="36" height="28" rx="2"
+                tabindex="0" role="button" aria-label="동별 인원"></rect>
+              <!-- People right → play -->
+              <rect class="zone" data-go="play" x="46" y="62" width="28" height="28" rx="2"
+                tabindex="0" role="button" aria-label="게임"></rect>
+              <!-- Far right person → game center -->
+              <rect class="zone" data-href="/game/" x="74" y="62" width="22" height="28" rx="2"
+                tabindex="0" role="button" aria-label="게임센터"></rect>
+              <!-- Kakao corner left bottom-ish -->
+              <rect class="zone" data-href="https://open.kakao.com/o/g51E976e" data-ext="1"
+                x="2" y="68" width="14" height="20" rx="2"
+                tabindex="0" role="button" aria-label="카톡방"></rect>
+            </svg>
+          </div>
+
+          <div class="poster-labels" aria-hidden="true">
+            <span class="hs-tag tag-ai"><i class="d"></i>AI 소식</span>
+            <span class="hs-tag tag-learn"><i class="d"></i>배움터</span>
+            <span class="hs-tag tag-city"><i class="d"></i>지도·코트</span>
+            <span class="hs-tag tag-park"><i class="d"></i>코트 가이드</span>
+            <span class="hs-tag tag-lounge"><i class="d"></i>라운지</span>
+            <span class="hs-tag tag-people"><i class="d"></i>동별 인원</span>
+            <span class="hs-tag tag-play"><i class="d"></i>게임</span>
+            <span class="hs-tag tag-kakao"><i class="d"></i>카톡방</span>
+            <span class="hs-tag tag-gamec"><i class="d"></i>게임센터</span>
           </div>
 
           <div class="poster-stats">
@@ -1088,7 +1161,7 @@ table{display:block;max-width:100%;overflow-x:auto}
           </div>
         </div>
 
-        <p class="poster-hint">이미지를 눌러 메뉴로 이동하세요 · 파란 점이 버튼입니다</p>
+        <p class="poster-hint">포스터 <b>영역</b>을 터치하면 메뉴로 이동합니다 · 아래 버튼도 동일</p>
 
         <div class="poster-quick" aria-label="빠른 메뉴">
           <button type="button" class="pq" data-go="map">지도</button>
@@ -1100,26 +1173,6 @@ table{display:block;max-width:100%;overflow-x:auto}
           <button type="button" class="pq" data-go="learn">배움</button>
           <a class="pq" href="https://open.kakao.com/o/g51E976e" target="_blank" rel="noopener">카톡</a>
         </div>
-      </div>
-
-          <b>센터 코트</b>
-          <small>지도 · 클럽 · 복컴</small>
-        </button>
-        <button type="button" class="arena-zone" data-scroll="zone-gear">
-          <div class="az-ico">🎒</div>
-          <b>용품 코너</b>
-          <small>라켓 · 러버 · 공</small>
-        </button>
-        <button type="button" class="arena-zone" data-scroll="zone-library">
-          <div class="az-ico">📖</div>
-          <b>탁구 서재</b>
-          <small>책 · 가이드</small>
-        </button>
-        <button type="button" class="arena-zone" data-go="play">
-          <div class="az-ico">🕹️</div>
-          <b>연습 머신</b>
-          <small>아케이드 게임</small>
-        </button>
       </div>
 
       <!-- 1 용품 코너 -->
@@ -1685,7 +1738,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./games.js?v=6"></script>
-<script src="./app.js?v=6"></script>
+<script src="./app.js?v=7"></script>
 
 <a href="/game/" class="fab-game" style="position:fixed;right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:40;background:#1565c0;color:#fff;font-weight:800;font-size:13px;padding:12px 16px;border-radius:999px;text-decoration:none;box-shadow:0 10px 28px rgba(21,101,192,.35);font-family:inherit">게임센터</a>
 
