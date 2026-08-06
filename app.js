@@ -162,6 +162,8 @@
       var fab = $("bgmFab");
       var lab = $("bgmFabLabel");
       var btn = $("bgmToggle");
+      var top = $("btnBgm");
+      if (top) top.classList.add("on");
       if (fab) fab.classList.add("on");
       if (lab) lab.textContent = "ON";
       if (btn) btn.textContent = "정지";
@@ -178,42 +180,90 @@
     var fab = $("bgmFab");
     var lab = $("bgmFabLabel");
     var btn = $("bgmToggle");
+    var top = $("btnBgm");
+    if (top) top.classList.remove("on");
     if (fab) fab.classList.remove("on");
     if (lab) lab.textContent = "BGM";
     if (btn) btn.textContent = "재생";
   }
 
+
   function initBgmUi() {
-    var fab = $("bgmFab");
-    var panel = $("bgmPanel");
-    if (!fab || !panel) return;
-    fab.addEventListener("click", function () {
-      panel.classList.toggle("open");
-      panel.setAttribute("aria-hidden", panel.classList.contains("open") ? "false" : "true");
-    });
-    $("bgmClose").addEventListener("click", function () {
-      panel.classList.remove("open");
-    });
-    $("bgmToggle").addEventListener("click", function () {
-      if (bgm.playing) bgmPause();
-      else bgmPlay();
-    });
-    $("bgmVol").addEventListener("input", function () {
-      bgm.vol = Number($("bgmVol").value) / 100;
-      if (bgm.master) bgm.master.gain.value = bgm.vol;
-    });
-    document.querySelectorAll("#bgmTracks .track").forEach(function (el) {
-      el.addEventListener("click", function () {
-        document.querySelectorAll("#bgmTracks .track").forEach(function (x) {
+    var btn = $("btnBgm");
+    var pop = $("bgmPop");
+    var fab = $("bgmFab"); // legacy
+    var lab = $("bgmFabLabel");
+    var toggle = $("bgmToggle");
+    var closeBtn = $("bgmClose");
+    var vol = $("bgmVol");
+
+    function setPlayingUi(on) {
+      if (btn) btn.classList.toggle("on", !!on);
+      if (fab) fab.classList.toggle("on", !!on);
+      if (lab) lab.textContent = on ? "ON" : "BGM";
+      if (toggle) toggle.textContent = on ? "정지" : "재생";
+    }
+
+    function openPop(on) {
+      if (!pop) return;
+      pop.classList.toggle("open", !!on);
+      pop.setAttribute("aria-hidden", on ? "false" : "true");
+      if (btn) btn.setAttribute("aria-expanded", on ? "true" : "false");
+    }
+
+    if (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openPop(!(pop && pop.classList.contains("open")));
+      });
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function () { openPop(false); });
+    }
+    if (toggle) {
+      toggle.addEventListener("click", function () {
+        if (bgm.playing) {
+          bgmPause();
+          setPlayingUi(false);
+        } else {
+          bgmPlay();
+          setPlayingUi(true);
+        }
+      });
+    }
+    if (vol) {
+      vol.addEventListener("input", function () {
+        bgm.vol = Number(vol.value) / 100;
+        if (bgm.master) bgm.master.gain.value = bgm.vol;
+      });
+    }
+    document.querySelectorAll("#bgmTracks .track, .bgm-pop .track").forEach(function (tr) {
+      tr.addEventListener("click", function () {
+        document.querySelectorAll("#bgmTracks .track, .bgm-pop .track").forEach(function (x) {
           x.classList.remove("on");
         });
-        el.classList.add("on");
-        bgm.track = el.getAttribute("data-track");
+        tr.classList.add("on");
+        bgm.track = tr.getAttribute("data-track") || "rally";
         if (bgm.playing) bgmStartTrack(bgm.track);
-        toast("트랙: " + el.textContent.trim().split("—")[0].trim());
       });
     });
+    document.addEventListener("click", function (e) {
+      if (!pop || !pop.classList.contains("open")) return;
+      var wrap = document.querySelector(".top-bgm");
+      if (wrap && wrap.contains(e.target)) return;
+      openPop(false);
+    });
+
+    // legacy fab (hidden) — no-op safe
+    if (fab) {
+      fab.addEventListener("click", function () {
+        if (btn) btn.click();
+      });
+    }
+
+    setPlayingUi(false);
   }
+
 
   // ── Home mini-map ──
   function initHomeMap() {
